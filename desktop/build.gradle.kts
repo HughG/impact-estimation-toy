@@ -14,6 +14,7 @@ kotlin {
         jvmToolchain(21)
         withJava()
     }
+    @Suppress("unused")
     sourceSets {
         val jvmMain by getting {
             dependencies {

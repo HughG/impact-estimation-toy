@@ -1,5 +1,3 @@
-import org.jetbrains.compose.compose
-
 plugins {
     kotlin("multiplatform")
     id("org.jetbrains.compose")
@@ -14,6 +12,7 @@ kotlin {
     jvm("desktop") {
         jvmToolchain(21)
     }
+    @Suppress("unused")
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -33,7 +32,8 @@ kotlin {
                 api("androidx.core:core-ktx:1.9.0")
             }
         }
-        val androidTest by getting {
+        // Android V2 SourceSet layout: use androidUnitTest for local unit tests
+        val androidUnitTest by getting {
             dependencies {
                 implementation("junit:junit:4.13.2")
             }
@@ -48,11 +48,11 @@ kotlin {
 }
 
 android {
-    compileSdkVersion(33)
+    compileSdk = 33
     sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
     defaultConfig {
-        minSdkVersion(24)
-        targetSdkVersion(33)
+        minSdk = 24
+        targetSdk = 33
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
