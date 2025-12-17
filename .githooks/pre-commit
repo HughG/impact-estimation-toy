@@ -1,0 +1,18 @@
+#!/usr/bin/env sh
+# Advisory pre-commit hook: warn if source changes are staged without any test changes.
+# Does not block the commit (exits 0).
+
+STAGED_FILES=$(git diff --cached --name-only)
+
+echo "$STAGED_FILES" | grep -E "^(common|desktop|android)/src/.+/(kotlin|java)/" >/dev/null 2>&1
+HAS_SRC=$?
+
+echo "$STAGED_FILES" | grep -E "/src/.+Test/|/src/.+Test/kotlin/|/src/.+Test/java/|/commonTest/|/jvmTest/" >/dev/null 2>&1
+HAS_TEST=$?
+
+if [ $HAS_SRC -eq 0 ] && [ $HAS_TEST -ne 0 ]; then
+  echo "[pre-commit] Warning: You are committing source changes without any test changes."
+  echo "[pre-commit] For TDD, consider committing failing tests first, then implementation."
+fi
+
+exit 0

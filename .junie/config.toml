@@ -1,0 +1,21 @@
+[git]
+auto_commit = true
+auto_push = false
+commit_message_template = "[Junie] {action}: {description}"
+
+[test]
+auto_run = true
+fail_on_error = false
+commands = [
+    "gradle commonTest",
+    "gradle test"
+]
+
+# Workflow controls for Junie
+[workflow]
+# When true, Junie will:
+#  - Write failing tests first and commit them before implementation.
+#  - Explicitly run tests to observe a failing state (red) before proceeding.
+#  - Provide short status updates at red/green checkpoints.
+enforce_tdd = true
+require_status_updates = true
