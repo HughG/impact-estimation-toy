@@ -3,8 +3,8 @@
 This plan outlines staged implementation for the Impact Estimation Tool (IET) focusing on Desktop (Windows) via Compose Multiplatform. It follows the suggested order: models → storage → UI. No code is included here.
 
 ## Stage 0 — Foundations & Project Wiring
-- [ ] Confirm Kotlin Multiplatform targets: common + desktop (JVM). Android target exists but is out of scope for now.
-- [ ] Confirm JVM toolchain (11) and Compose versions are consistent across modules.
+- [ ] Confirm Kotlin Multiplatform targets: common + desktop (JVM). Remove the Android target completely for now.
+- [ ] Confirm JVM toolchain (21) and Compose versions are consistent across modules.
 - [ ] Establish module boundaries/namespaces for model and storage under `commonMain` where possible.
 - [ ] Decide DI/locator approach (simple service provider vs. manual wiring).
 - [ ] Define error-handling strategy (validation errors vs. domain invariants vs. IO errors).
@@ -12,21 +12,20 @@ This plan outlines staged implementation for the Impact Estimation Tool (IET) fo
 - [ ] Define unit testing strategy and locations (commonTest, jvmTest) per guidelines.
 - [ ] Add lightweight sample data set for manual testing.
 
-Open Question: Should Android target be completely disabled for now, or left as-is but ignored by desktop-focused work?
-
 ## Stage 1 — Domain Model (IET/Model)
 
 Goal: Implement core domain entities and computations suitable for UI binding.
 
 - [ ] Entities: `QualityRequirement` (id/name, current, goal, unit, type: Performance|Cost).
 - [ ] Entities: `DesignIdea` (id/name, description optional).
-- [ ] Entity: `EstimationCell` (estimatedValue, optional confidenceRange).
-- [ ] Table Aggregates: container that maps `QualityRequirement` × `DesignIdea` → `EstimationCell`.
-- [ ] Computation: Impact percentage for a cell relative to requirement current→goal delta.
+- [ ] Entity: `Estimation` (estimatedValue, optional confidenceRange which, for now, is a symmetric absolute delta).
+- [ ] Table Aggregates: container that maps `QualityRequirement` × `DesignIdea` → `Estimation`.
+- [ ] Computation: Impact percentage for an estimation relative to requirement current→goal delta.
 - [ ] Computation: Totals per group (Performance Totals, Cost Totals) across rows per column.
 - [ ] Computation: Performance-to-Cost Ratio per DesignIdea (TotalPerformance% / TotalCost%).
 - [ ] Validation: 
-  - [ ] Goal ≠ Current for performance rows (to avoid divide-by-zero). Define behavior when equal.
+  - [ ] Goal ≠ Current for performance rows (to avoid divide-by-zero). If equal, flag validation error and exclude from totals, highlighting both the invalid cell and the column total.
+  - [ ] Where the TotalCost% is 0%, the Performance-to-Cost Ratio is undefined and should be displayed as N/A, and excluded from ordering.
   - [ ] Costs are minimized; minimum legal value is zero.
   - [ ] Estimated value may be below current or above goal for performance; >= 0 for cost.
   - [ ] ConfidenceRange is non-negative and interpretable on same scale.
@@ -35,12 +34,6 @@ Goal: Implement core domain entities and computations suitable for UI binding.
   - [ ] Simple change-logging hooks to support undo/redo later.
 - [ ] Data structures prepared for stable ordering (preserve insertion order for rows/columns).
 - [ ] Bridge-friendly API: observable or callback-based change notifications for UI recomposition.
-
-Open Question: Should we model confidence as symmetric absolute delta, percentage, or asymmetric bounds? Requirements mention "+/- range" — assume symmetric absolute value unless specified.
-
-Open Question: When Goal == Current for a performance requirement, should impact be treated as 0, undefined, or require user correction? Proposal: flag validation error and exclude from totals.
-
-Open Question: For Performance-to-Cost Ratio when cost total is 0% (or undefined), should ratio be Infinity, N/A, or capped? Proposal: display N/A and exclude from ordering.
 
 ## Stage 2 — Model–UI Bridge
 
@@ -79,13 +72,13 @@ Goal: Implement an editable, scrollable table with fixed headers and pinned tota
 - [ ] App shell and window with menu or toolbar for File (New, Open, Save, Save As), Edit (Undo/Redo), and Help.
 - [ ] Layout: scrollable table with separate panes for fixed row headers and column headers.
 - [ ] Pinned rows: group totals (Performance, Costs) and final Performance-to-Cost Ratio row.
+- [ ] Row re-ordering: individual Performance and Cost rows can be dragged to re-order.
+- [ ] Column re-ordering: columns can be dragged to re-order.
 - [ ] Auto-sizing: columns/rows size to content; allow manual resize later if needed.
 - [ ] Editing behavior: commit on Enter or focus loss; validation feedback inline.
 - [ ] Navigation: keyboard (arrows, Tab/Shift+Tab, Enter), mouse clicks; selection highlight.
 - [ ] Recalc: trigger model recomputation on edit; UI recompose via bridge.
 - [ ] Accessibility: basic focus order and labels.
-
-Open Question: Is column reordering required by users? For v1, assume fixed order with add/remove at end and drag reorder as future enhancement.
 
 ## Stage 5 — Undo/Redo
 
@@ -94,9 +87,8 @@ Goal: Allow users to undo/redo edits across model changes.
 - [ ] Command or memento-based change tracking around the model service.
 - [ ] Scope: cell edits, row/column add/remove, rename, unit changes, and reorders.
 - [ ] Integrate with UI: menu items and shortcuts (Ctrl+Z / Ctrl+Y).
-- [ ] Persist undo stack? Likely no — stack resets on file load/new.
-
-Open Question: Depth limit and memory policy for history? Default: 100 steps.
+- [ ] Undo stack depth limit (100 steps).
+- [ ] Undo stack persists in memory across save, or re-load of same file, but reset when a new file is created, or a different file is loaded.
 
 ## Stage 6 — Validation, Formatting, and Units
 
@@ -106,8 +98,6 @@ Goal: Provide consistent user feedback and avoid invalid computations.
 - [ ] Numeric parsing/formatting policy, including decimal separator and precision.
 - [ ] Display of confidence ranges and percentages with sensible rounding (e.g., 1 or 2 decimals).
 - [ ] Error display inline and summarized (e.g., status area).
-
-Open Question: Should units affect formatting (e.g., currency, time) with specialized renderers? For v1, treat units as free-text labels and keep numeric formatting generic.
 
 ## Stage 7 — Sample Data and Documentation
 
@@ -135,10 +125,10 @@ Open Question: Any requirement for golden JSON fixtures for regression? If yes, 
 
 - [ ] Web target using Compose Multiplatform Web; reuse common model and storage.
 - [ ] Import/export CSV.
-- [ ] Column reorder and resize with persistence.
 - [ ] Templates for common requirement types.
 - [ ] Multiple sheets per file.
 - [ ] Collaboration or live sharing.
+- [ ] User-editable, saved list of units, and custom rendering for some units such as currency.  
 
 ---
 
