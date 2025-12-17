@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "docs/schema/iet.schema.json",
+  "title": "Impact Estimation Tool (IET) File",
+  "description": "Schema for Impact Estimation Tool saved files. See docs/examples/sample-iet.json for an example.",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Path or URL of this schema file. Example: 'docs/schema/iet.schema.json'"
+    },
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1,
+      "description": "Schema version for on-disk files. Initial version is 1."
+    },
+    "qualityRequirements": {
+      "type": "array",
+      "description": "List of Quality Requirements (rows). Order is significant and preserved in files/UI.",
+      "items": { "$ref": "#/$defs/QualityRequirement" }
+    },
+    "designIdeas": {
+      "type": "array",
+      "description": "List of Design Ideas (columns). Order is significant and preserved in files/UI.",
+      "items": { "$ref": "#/$defs/DesignIdea" }
+    },
+    "cells": {
+      "type": "array",
+      "description": "Input cells mapping requirementId × designId to an estimated value on the requirement's scale.",
+      "items": { "$ref": "#/$defs/Cell" }
+    }
+  },
+  "required": ["schemaVersion", "qualityRequirements", "designIdeas", "cells"],
+  "$defs": {
+    "NonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "QualityRequirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/NonEmptyString", "description": "Stable identifier for the requirement (e.g., 'Perf-ResponseTime')." },
+        "name": { "$ref": "#/$defs/NonEmptyString", "description": "Human-readable name." },
+        "current": { "type": "number", "description": "Current measured value on the unit's scale." },
+        "goal": { "type": "number", "description": "Target (goal) value on the unit's scale." },
+        "unit": { "$ref": "#/$defs/NonEmptyString", "description": "Scale unit label (e.g., 'ms', 'hours')." },
+        "type": { "type": "string", "enum": ["Performance", "Cost"], "description": "Requirement group type." }
+      },
+      "required": ["id", "name", "current", "goal", "unit", "type"]
+    },
+    "DesignIdea": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/NonEmptyString", "description": "Stable identifier for the design idea (e.g., 'IdeaA')." },
+        "name": { "$ref": "#/$defs/NonEmptyString", "description": "Human-readable name." }
+      },
+      "required": ["id", "name"]
+    },
+    "Cell": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "requirementId": { "$ref": "#/$defs/NonEmptyString", "description": "References QualityRequirement.id" },
+        "designId": { "$ref": "#/$defs/NonEmptyString", "description": "References DesignIdea.id" },
+        "estimatedValue": { "type": "number", "description": "Estimated new value on the requirement's unit scale." },
+        "confidence": { "type": "number", "minimum": 0, "description": "+/- confidence range on the same scale (optional)." }
+      },
+      "required": ["requirementId", "designId", "estimatedValue"]
+    }
+  }
+}

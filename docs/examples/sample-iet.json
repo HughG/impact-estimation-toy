@@ -1,0 +1,32 @@
+{
+  "$schema": "../docs/schema/iet.schema.json",
+  "schemaVersion": 1,
+  "qualityRequirements": [
+    {
+      "id": "Perf-ResponseTime",
+      "name": "Response Time",
+      "current": 500,
+      "goal": 200,
+      "unit": "ms",
+      "type": "Performance"
+    },
+    {
+      "id": "Cost-DevHours",
+      "name": "Development Effort",
+      "current": 0,
+      "goal": 0,
+      "unit": "hours",
+      "type": "Cost"
+    }
+  ],
+  "designIdeas": [
+    { "id": "IdeaA", "name": "Caching Layer" },
+    { "id": "IdeaB", "name": "DB Indexes" }
+  ],
+  "cells": [
+    { "requirementId": "Perf-ResponseTime", "designId": "IdeaA", "estimatedValue": 250, "confidence": 50 },
+    { "requirementId": "Perf-ResponseTime", "designId": "IdeaB", "estimatedValue": 300, "confidence": 30 },
+    { "requirementId": "Cost-DevHours", "designId": "IdeaA", "estimatedValue": 120, "confidence": 20 },
+    { "requirementId": "Cost-DevHours", "designId": "IdeaB", "estimatedValue": 40,  "confidence": 10 }
+  ]
+}

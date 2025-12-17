@@ -3,14 +3,22 @@
 This plan outlines staged implementation for the Impact Estimation Tool (IET) focusing on Desktop (Windows) via Compose Multiplatform. It follows the suggested order: models → storage → UI. No code is included here.
 
 ## Stage 0 — Foundations & Project Wiring
-- [ ] Confirm Kotlin Multiplatform targets: common + desktop (JVM). Remove the Android target completely for now.
-- [ ] Confirm JVM toolchain (21) and Compose versions are consistent across modules.
-- [ ] Establish module boundaries/namespaces for model and storage under `commonMain` where possible.
-- [ ] Decide DI/locator approach (simple service provider vs. manual wiring).
-- [ ] Define error-handling strategy (validation errors vs. domain invariants vs. IO errors).
-- [ ] Define number format and locale handling for numeric inputs/outputs.
-- [ ] Define unit testing strategy and locations (commonTest, jvmTest) per guidelines.
-- [ ] Add lightweight sample data set for manual testing.
+- [x] Confirm Kotlin Multiplatform targets: common + desktop (JVM). Remove the Android target completely for now.
+  - Android app module excluded in settings.gradle.kts; common module has no Android target configured.
+- [x] Confirm JVM toolchain (21) and Compose versions are consistent across modules.
+  - jvmToolchain(21) set in :common and :desktop; Compose and Kotlin versions centralized via gradle.properties.
+- [x] Establish module boundaries/namespaces for model and storage under `commonMain` where possible.
+  - Created packages: `org.tameter.iet.model` and `org.tameter.iet.storage` with Stage 0 docs.
+- [x] Decide DI/locator approach (simple service provider vs. manual wiring).
+  - Decision: Simple `ServiceLocator` singleton in commonMain (manual registration); no external DI.
+- [x] Define error-handling strategy (validation errors vs. domain invariants vs. IO errors).
+  - Added `DomainError` sealed interface with `ValidationError`, `InvariantViolation`, and `IoError` in commonMain.
+- [x] Define number format and locale handling for numeric inputs/outputs.
+  - Added `NumberPolicy` (decimal separator abstraction, default 2 fraction digits for percentages). Platform-specific formatting deferred to later stages.
+- [x] Define unit testing strategy and locations (commonTest, jvmTest) per guidelines.
+  - Added `Stage0ScaffoldingTest` under commonTest validating locator and number policy; future model tests will use commonTest, desktop UI specifics under jvmTest.
+- [x] Add lightweight sample data set for manual testing.
+  - Added `docs/examples/sample-iet.json` with minimal plausible content.
 
 ## Stage 1 — Domain Model (IET/Model)
 
