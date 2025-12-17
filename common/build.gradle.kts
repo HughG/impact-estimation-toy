@@ -1,15 +1,17 @@
 plugins {
     kotlin("multiplatform")
     id("org.jetbrains.compose")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 group = "org.tameter"
 version = "1.0-SNAPSHOT"
 
 kotlin {
+    // Configure JVM toolchain for all JVM targets (Kotlin 2.0+ requirement)
+    jvmToolchain(21)
     // Android temporarily disabled; only desktop JVM target is active
     jvm("desktop") {
-        jvmToolchain(21)
     }
     @Suppress("unused")
     sourceSets {

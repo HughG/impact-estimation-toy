@@ -3,6 +3,7 @@ import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 plugins {
     kotlin("multiplatform")
     id("org.jetbrains.compose")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 group = "org.tameter.impactestimation"
@@ -10,8 +11,9 @@ version = "1.0-SNAPSHOT"
 
 
 kotlin {
+    // Configure JVM toolchain at the extension level (Kotlin 2.0+)
+    jvmToolchain(21)
     jvm {
-        jvmToolchain(21)
         withJava()
     }
     @Suppress("unused")
