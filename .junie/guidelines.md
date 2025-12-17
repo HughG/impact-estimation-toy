@@ -12,7 +12,7 @@ Project focus: Kotlin Multiplatform (KMP) with primary target: Desktop (Windows,
   - [RUN_VERIFY] to run targeted commands/tests when needed, no edits.
 - Keep changes minimal and localized. Avoid sweeping refactors unless requested.
 - Never weaken or skip tests to “make green”.
-- Ask for clarification if requirements are ambiguous.
+- Ask for clarification if requirements are ambiguous.  Where possible, add an "Open Question: " comment to the code and carry on with other parts of the tasks if possible, then mention that there are new open questions in your response (and any commit/PR description).  
 
 ## Code Style & Structure
 - Languages: Kotlin (JVM/KMP), Gradle Kotlin DSL.
@@ -30,7 +30,8 @@ Project focus: Kotlin Multiplatform (KMP) with primary target: Desktop (Windows,
 - OS: Windows. Use PowerShell syntax in commands; use backslashes in paths.
 
 ## Testing Strategy
-- Prefer TDD: write tests before implementation, create commits with just the failing tests, then a separate commit with the implementation.
+- Tests should reference one or more requirement IDs in comments, if they're high-level enough.
+- Prefer TDD: write tests before implementation, create commits with just the failing tests, then a separate commit with the implementation.  It's fine to add more than one failing test in a single commit, and it's okay not to fix all failing tests in a single commit, as long as you don't break any which were passing before.
 - If fixing a bug with non‑trivial logic, add/adjust tests under appropriate source sets (commonTest or jvmTest). For truly trivial fixes, a focused manual check is acceptable.
 - Prefer unit tests in common where possible; desktop‑specific behavior can live in jvmTest.
 - Don’t introduce heavy UI snapshot testing without request.
@@ -40,7 +41,7 @@ Project focus: Kotlin Multiplatform (KMP) with primary target: Desktop (Windows,
 - For Junie‑specific notes or conventions, update this file rather than scattering guidance elsewhere.
 
 ## Commit & PR Conventions
-- Commit messages: concise imperative subject, optional body with motivation and effects.
+- Commit messages: concise imperative subject, optional body with motivation and effects; label as "[Junie]".
 - Group related changes in a single commit when small; split large changes logically.
 - Avoid unrelated formatting or version bumps.
 
