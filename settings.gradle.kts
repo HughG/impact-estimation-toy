@@ -17,4 +17,5 @@ pluginManagement {
 
 rootProject.name = "impact-estimation-toy"
 
-include(":android", ":desktop", ":common")
+// Temporarily exclude the Android app module to avoid requiring a local Android SDK
+include(":desktop", ":common")
