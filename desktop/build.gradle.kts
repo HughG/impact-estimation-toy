@@ -5,13 +5,13 @@ plugins {
     id("org.jetbrains.compose")
 }
 
-group = "org.tameter"
+group = "org.tameter.impactestimation"
 version = "1.0-SNAPSHOT"
 
 
 kotlin {
     jvm {
-        jvmToolchain(11)
+        jvmToolchain(21)
         withJava()
     }
     sourceSets {
@@ -29,7 +29,7 @@ compose.desktop {
     application {
         mainClass = "MainKt"
         nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+            targetFormats(TargetFormat.Msi /*, TargetFormat.Dmg, TargetFormat.Deb*/)
             packageName = "impact-estimation-toy"
             packageVersion = "1.0.0"
         }
