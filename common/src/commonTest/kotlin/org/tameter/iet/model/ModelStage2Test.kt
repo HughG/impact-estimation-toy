@@ -3,6 +3,12 @@ package org.tameter.iet.model
 import org.tameter.iet.model.bridge.ModelBridge
 import org.tameter.iet.model.bridge.ModelEvent
 import org.tameter.iet.model.bridge.TableReadModel
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
@@ -27,18 +33,33 @@ class ModelStage2Test {
         val table = ImpactEstimationTable(requirements = listOf(perf, res), ideas = listOf(idea))
         val bridge = ModelBridge(table)
 
-        // When editing a cell via the bridge
-        bridge.setEstimation(0, 0, Estimation(estimatedValue = 150.0))
-
-        // Then an event referencing stable row/column IDs should be available
-        val evt = bridge.events.value
-        assertNotNull(evt, "Expected a bridge event after edit")
-        when (evt) {
-            is ModelEvent.CellEdited -> {
-                assertEquals("P1", evt.rowId)
-                assertEquals("D1", evt.columnId)
+        // When editing a cell via the bridge, capture the next two non-null events from the flow
+        runBlocking {
+            val events = mutableListOf<ModelEvent>()
+            val job = launch {
+                bridge.events
+                    .filterNotNull()
+                    .take(2)
+                    .toList(events)
             }
-            else -> error("Unexpected event type: $evt")
+
+            bridge.setEstimation(0, 0, Estimation(estimatedValue = 150.0))
+
+            // Ensure the test does not hang if fewer than two events are emitted
+            withTimeout(2_000) {
+                job.join()
+            }
+
+            // Then the events should be CellEdited followed by RecomputeComplete
+            assertEquals(2, events.size, "Expected two events: CellEdited then RecomputeComplete")
+
+            val first = events[0]
+            assertTrue(first is ModelEvent.CellEdited, "First event should be CellEdited")
+            assertEquals("P1", first.rowId)
+            assertEquals("D1", first.columnId)
+
+            val second = events[1]
+            assertTrue(second is ModelEvent.RecomputeComplete, "Second event should be RecomputeComplete")
         }
     }
 

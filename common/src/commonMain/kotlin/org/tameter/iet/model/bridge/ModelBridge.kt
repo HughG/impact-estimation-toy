@@ -72,6 +72,9 @@ class ModelBridge(
 
         // Rebuild read model snapshot after change
         _readModel.value = buildReadModel()
+
+        // Emit recompute completion after snapshot updated
+        _events.value = ModelEvent.RecomputeComplete
     }
 
     private fun buildReadModel(): TableReadModel {
@@ -126,27 +129,57 @@ class ModelBridge(
 
     // Stage 2 (planned): operations for rows/columns — stubs added to support failing tests
     fun addRow(requirement: Requirement) {
-        // Open Question: Should adding a row be delegated to ImpactEstimationTable or managed here?
-        // Intentionally left unimplemented for now (tests expect failure until implemented).
+        // For now, manipulate the underlying lists directly (ImpactEstimationTable exposes them as mutable lists)
+        table.requirements.add(requirement)
+        // Update snapshot first so UI can read after event
+        _readModel.value = buildReadModel()
+        _events.value = ModelEvent.RowAdded(requirement.id)
     }
 
     fun removeRow(rowId: String) {
-        // Intentionally left unimplemented for now.
+        val idx = table.requirements.indexOfFirst { it.id == rowId }
+        if (idx >= 0) {
+            table.requirements.removeAt(idx)
+            _readModel.value = buildReadModel()
+            _events.value = ModelEvent.RowRemoved(rowId)
+        }
     }
 
     fun reorderRows(fromIndex: Int, toIndex: Int) {
-        // Intentionally left unimplemented for now.
+        if (fromIndex == toIndex) return
+        if (fromIndex !in table.requirements.indices) return
+        var targetIndex = toIndex
+        val item = table.requirements.removeAt(fromIndex)
+        // After removal, if inserting beyond end, clamp to end
+        if (targetIndex > table.requirements.size) targetIndex = table.requirements.size
+        table.requirements.add(targetIndex, item)
+        _readModel.value = buildReadModel()
+        _events.value = ModelEvent.RowReordered(fromIndex, toIndex)
     }
 
     fun addColumn(idea: DesignIdea) {
-        // Intentionally left unimplemented for now.
+        table.ideas.add(idea)
+        _readModel.value = buildReadModel()
+        _events.value = ModelEvent.ColumnAdded(idea.id)
     }
 
     fun removeColumn(columnId: String) {
-        // Intentionally left unimplemented for now.
+        val idx = table.ideas.indexOfFirst { it.id == columnId }
+        if (idx >= 0) {
+            table.ideas.removeAt(idx)
+            _readModel.value = buildReadModel()
+            _events.value = ModelEvent.ColumnRemoved(columnId)
+        }
     }
 
     fun reorderColumns(fromIndex: Int, toIndex: Int) {
-        // Intentionally left unimplemented for now.
+        if (fromIndex == toIndex) return
+        if (fromIndex !in table.ideas.indices) return
+        var targetIndex = toIndex
+        val item = table.ideas.removeAt(fromIndex)
+        if (targetIndex > table.ideas.size) targetIndex = table.ideas.size
+        table.ideas.add(targetIndex, item)
+        _readModel.value = buildReadModel()
+        _events.value = ModelEvent.ColumnReordered(fromIndex, toIndex)
     }
 }
