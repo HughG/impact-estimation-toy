@@ -65,7 +65,7 @@ class ModelStage1Test {
         val cost = QualityRequirement("C1", "$", RequirementType.Cost, 100.0, 60.0)
         val idea = DesignIdea("D1", name = "Idea 1")
 
-        val table = IetTable(requirements = listOf(perfA, perfB, cost), ideas = listOf(idea))
+        val table = ImpactEstimationTable(requirements = listOf(perfA, perfB, cost), ideas = listOf(idea))
         // Estimations
         table.setEstimation(0, 0, Estimation(estimatedValue = 150.0)) // 50%
         table.setEstimation(1, 0, Estimation(estimatedValue = 35.0))  // (35-20)/(50-20)=0.5 -> 50%
@@ -88,7 +88,7 @@ class ModelStage1Test {
         val perf = QualityRequirement("Pbad", "ms", RequirementType.Performance, 100.0, 100.0)
         val cost = QualityRequirement("C1", "$", RequirementType.Cost, 100.0, 60.0)
         val idea = DesignIdea("D1", name = "Idea 1")
-        val table = IetTable(requirements = listOf(perf, cost), ideas = listOf(idea))
+        val table = ImpactEstimationTable(requirements = listOf(perf, cost), ideas = listOf(idea))
         table.setEstimation(0, 0, Estimation(estimatedValue = 110.0)) // invalid perf
         table.setEstimation(1, 0, Estimation(estimatedValue = 80.0))  // 50% cost
 
@@ -111,7 +111,7 @@ class ModelStage1Test {
         val perf = QualityRequirement("P1", "ms", RequirementType.Performance, 100.0, 200.0)
         val cost = QualityRequirement("C1", "$", RequirementType.Cost, 100.0, 60.0)
         val idea = DesignIdea("D1", name = "Idea 1")
-        val table = IetTable(requirements = listOf(perf, cost), ideas = listOf(idea))
+        val table = ImpactEstimationTable(requirements = listOf(perf, cost), ideas = listOf(idea))
         table.setEstimation(0, 0, Estimation(estimatedValue = 150.0)) // +50% perf
         table.setEstimation(1, 0, Estimation(estimatedValue = 100.0)) // 0% cost
 

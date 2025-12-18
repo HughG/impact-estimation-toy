@@ -3,7 +3,7 @@ package org.tameter.iet.model
 /**
  * Stage 1: Table aggregate that maintains insertion order for rows and columns.
  */
-class IetTable(
+class ImpactEstimationTable(
     requirements: List<QualityRequirement> = emptyList(),
     ideas: List<DesignIdea> = emptyList(),
 ) {
