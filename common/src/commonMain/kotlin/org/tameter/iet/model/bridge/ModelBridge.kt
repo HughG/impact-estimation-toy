@@ -6,6 +6,8 @@ import org.tameter.iet.model.Estimation
 import org.tameter.iet.model.ImpactEstimationTable
 import org.tameter.iet.model.RequirementType
 import org.tameter.iet.model.CellImpact
+import org.tameter.iet.model.Requirement
+import org.tameter.iet.model.DesignIdea
 
 /**
  * Stage 2 (stub): Model–UI bridge API. Minimal types to allow tests to compile.
@@ -120,5 +122,31 @@ class ModelBridge(
         }
 
         return TableReadModel(columns = columns, rows = normalRows + footerRows)
+    }
+
+    // Stage 2 (planned): operations for rows/columns — stubs added to support failing tests
+    fun addRow(requirement: Requirement) {
+        // Open Question: Should adding a row be delegated to ImpactEstimationTable or managed here?
+        // Intentionally left unimplemented for now (tests expect failure until implemented).
+    }
+
+    fun removeRow(rowId: String) {
+        // Intentionally left unimplemented for now.
+    }
+
+    fun reorderRows(fromIndex: Int, toIndex: Int) {
+        // Intentionally left unimplemented for now.
+    }
+
+    fun addColumn(idea: DesignIdea) {
+        // Intentionally left unimplemented for now.
+    }
+
+    fun removeColumn(columnId: String) {
+        // Intentionally left unimplemented for now.
+    }
+
+    fun reorderColumns(fromIndex: Int, toIndex: Int) {
+        // Intentionally left unimplemented for now.
     }
 }
