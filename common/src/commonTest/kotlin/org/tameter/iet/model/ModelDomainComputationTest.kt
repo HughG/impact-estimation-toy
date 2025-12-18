@@ -6,6 +6,11 @@ import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 /**
+ * Functionality: Domain computations and validation (Stage-agnostic)
+ * - Impact percent for Performance/Resource
+ * - Totals and Performance-to-Cost Ratio
+ * - Validation and N/A cases
+ *
  * Requirements refs:
  * - IET/Model/Entities (Requirement, DesignIdea, Estimation)
  * - IET/Model/EstimationCell (impact percent, confidence)
@@ -13,9 +18,9 @@ import kotlin.test.assertTrue
  * - IET/Model/Output/PerformanceToResourceRatio (ratio, N/A when resource total is 0)
  * - Validation rules listed under Stage 1 plan
  *
- * Given/When/Then style notes inline per test.
+ * Given/When/Then notes inline per test.
  */
-class ModelStage1Test {
+class ModelDomainComputationTest {
     @Test
     fun impact_for_performance_requirement_is_percentage_of_delta() {
         // Given a performance requirement with an estimate halfway between current and goal

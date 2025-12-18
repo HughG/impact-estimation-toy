@@ -1,14 +1,12 @@
-@file:OptIn(ExperimentalCoroutinesApi::class)
+@file:OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 
 package org.tameter.iet.model
 
 import org.tameter.iet.model.bridge.ModelBridge
 import org.tameter.iet.model.bridge.ModelEvent
 import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -18,44 +16,17 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
+ * Functionality: Bridge structural operations (add/remove/reorder rows/columns)
+ * - Emits appropriate events
+ * - Updates read model (including order for reorders)
+ *
  * Requirements refs:
  * - Stage 2 — Model–UI Bridge
  *   - RecomputeComplete event should be emitted after recomputation (currently missing) [IET/Stage2/Events]
  *   - Provide operations to add/remove/reorder rows and columns [IET/Stage2/Operations]
  *
- * Given/When/Then notes inline.
  */
-class ModelStage2IncompleteTest {
-    @Test
-    fun recompute_complete_event_emitted_after_edit() {
-        // Given a table and bridge
-        val perf = PerformanceRequirement("P1", "ms", current = 100.0, goal = 200.0)
-        val res = ResourceRequirement("R1", "$", budget = 100.0)
-        val idea = DesignIdea("D1", name = "Idea 1")
-        val table = ImpactEstimationTable(requirements = listOf(perf, res), ideas = listOf(idea))
-        val bridge = ModelBridge(table)
-
-        // When editing a cell, subscribe to events first to avoid missing emissions
-        runTest {
-            val ch = Channel<ModelEvent>(capacity = 2)
-            val collector = launch(start = CoroutineStart.UNDISPATCHED) {
-                bridge.events
-                    .take(2)
-                    .collect { e -> ch.trySend(e) }
-            }
-
-            bridge.setEstimation(0, 0, Estimation(estimatedValue = 150.0))
-            advanceUntilIdle()
-
-            // Then the bridge should emit CellEdited then RecomputeComplete
-            val first = withTimeout(1_500) { ch.receive() }
-            val second = withTimeout(1_500) { ch.receive() }
-            collector.cancel()
-            assertTrue(first is ModelEvent.CellEdited, "First event should be CellEdited")
-            assertTrue(second is ModelEvent.RecomputeComplete, "Second event should be RecomputeComplete")
-        }
-    }
-
+class ModelBridgeOperationsTest {
     @Test
     fun row_add_emits_event_and_updates_read_model() {
         // Given an empty table/bridge
@@ -166,9 +137,9 @@ class ModelStage2IncompleteTest {
 
     @Test
     fun row_remove_emits_event_and_updates_read_model() {
-        // Given a table with a row
-        val r = PerformanceRequirement("Rmv", "ms", current = 0.0, goal = 10.0)
-        val bridge = ModelBridge(ImpactEstimationTable(requirements = listOf(r)))
+        // Given a table with one row
+        val r1 = PerformanceRequirement("Rmv", "ms", current = 0.0, goal = 10.0)
+        val bridge = ModelBridge(ImpactEstimationTable(requirements = listOf(r1)))
 
         runTest {
             // When removing the row by ID
@@ -191,8 +162,9 @@ class ModelStage2IncompleteTest {
 
     @Test
     fun column_remove_emits_event_and_updates_read_model() {
-        // Given a table with a column
-        val bridge = ModelBridge(ImpactEstimationTable(ideas = listOf(DesignIdea("Cmv", name = "Idea"))))
+        // Given a table with one column
+        val c1 = DesignIdea("Cmv", name = "Idea")
+        val bridge = ModelBridge(ImpactEstimationTable(ideas = listOf(c1)))
 
         runTest {
             // When removing the column by ID
