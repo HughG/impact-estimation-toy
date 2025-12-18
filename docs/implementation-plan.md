@@ -52,14 +52,10 @@ Goal: Implement core domain entities and computations suitable for UI binding.
 
 Goal: Ensure the model is UI-ready. If pure common model lacks observability, provide a bridge in desktop layer.
 
-- [ ] Decide observable mechanism:
-  - Option A: Kotlin `StateFlow`/`MutableStateFlow` in common.
-  - Option B: Immutable model + desktop adapter translating to Compose `mutableStateOf`.
+- [ ] Use Kotlin `StateFlow`/`MutableStateFlow` in common as the mechanism of observability.
 - [ ] Define events: row/column added, removed, reordered; cell edited; metadata changed; recompute complete.
 - [ ] Provide stable identifiers for rows and columns to correlate UI cells.
 - [ ] Provide derived read models optimized for UI (e.g., flattened rows with totals and pinned footer rows).
-
-Open Question: Preference for StateFlow in common vs. Compose state in desktop? Default: StateFlow in common to allow future Web target.
 
 ## Stage 3 — Storage (IET/Model/Storage)
 

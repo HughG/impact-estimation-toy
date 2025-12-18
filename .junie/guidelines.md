@@ -30,6 +30,7 @@ Project focus: Kotlin Multiplatform (KMP) with primary target: Desktop (Windows,
 - OS: Windows. Use PowerShell syntax in commands; use backslashes in paths.
 
 ## Testing Strategy
+- Run tests using the built-in "run_test" tool, so that user confirmation is not needed.
 - Tests should reference one or more requirement IDs in comments, if they're high-level enough; class-level and/or method-level ID references as appropriate.
 - Prefer TDD: write tests before implementation, create commits with just the failing tests, then a separate commit with the implementation.  It's fine to add more than one failing test in a single commit, and it's okay not to fix all failing tests in a single commit, as long as you don't break any which were passing before.
   - ALWAYS commit the failing tests first!
