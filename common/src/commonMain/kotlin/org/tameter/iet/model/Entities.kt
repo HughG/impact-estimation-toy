@@ -1,5 +1,7 @@
 package org.tameter.iet.model
 
+import org.tameter.iet.policy.ValidationError
+
 /**
  * Stage 1: Core entities used by the IET model.
  */
@@ -12,6 +14,16 @@ sealed class Requirement {
      * Compute the impact percentage of an estimation against this requirement.
      */
     abstract fun computeImpact(est: Estimation): CellImpact
+    protected fun getConfidenceRange(
+        est: Estimation,
+        errors: MutableList<ValidationError>
+    ): Double? {
+        val conf = est.confidenceRange
+        if (conf != null && conf < 0) {
+            errors += ValidationError("Confidence range must be >= 0")
+        }
+        return conf
+    }
 }
 
 data class PerformanceRequirement(
@@ -22,17 +34,22 @@ data class PerformanceRequirement(
 ) : Requirement() {
     override val type: RequirementType = RequirementType.Performance
 
+    /**
+     * Compute the impact percentage of an estimation against a requirement.
+     *
+     * Performance:
+     *   percentage = (estimated - current) / (goal - current) * 100
+     *   - goal must differ from current; if equal, invalid.
+     *   - confidence% = (confidence / |goal - current|) * 100
+     */
     override fun computeImpact(est: Estimation): CellImpact {
-        val errors = mutableListOf<org.tameter.iet.policy.ValidationError>()
+        val errors = mutableListOf<ValidationError>()
 
-        val conf = est.confidenceRange
-        if (conf != null && conf < 0) {
-            errors += org.tameter.iet.policy.ValidationError("Confidence range must be >= 0")
-        }
+        val conf = getConfidenceRange(est, errors)
 
         val requiredDelta = goal - current
         if (requiredDelta == 0.0) {
-            errors += org.tameter.iet.policy.ValidationError("Performance requirement goal must differ from current")
+            errors += ValidationError("Performance requirement goal must differ from current")
         }
 
         if (errors.isNotEmpty()) return CellImpact.Invalid(errors)
@@ -51,19 +68,25 @@ data class ResourceRequirement(
 ) : Requirement() {
     override val type: RequirementType = RequirementType.Resource
 
+    /**
+     * Compute the impact percentage of an estimation against a requirement.
+     *
+     * Resource (minimize):
+     *   percentage = (budget - estimated) / budget * 100
+     *   - budget must be > 0; estimated must be >= 0.
+     *   - confidence% = (confidence / budget) * 100
+     */
     override fun computeImpact(est: Estimation): CellImpact {
-        val errors = mutableListOf<org.tameter.iet.policy.ValidationError>()
+        val errors = mutableListOf<ValidationError>()
 
-        val conf = est.confidenceRange
-        if (conf != null && conf < 0) {
-            errors += org.tameter.iet.policy.ValidationError("Confidence range must be >= 0")
-        }
+        val conf = getConfidenceRange(est, errors)
+
 
         if (budget <= 0.0) {
-            errors += org.tameter.iet.policy.ValidationError("Resource budget must be > 0")
+            errors += ValidationError("Resource budget must be > 0")
         }
         if (est.estimatedValue < 0.0) {
-            errors += org.tameter.iet.policy.ValidationError("Resource estimated value must be >= 0")
+            errors += ValidationError("Resource estimated value must be >= 0")
         }
 
         if (errors.isNotEmpty()) return CellImpact.Invalid(errors)
@@ -81,7 +104,7 @@ data class DesignIdea(
 )
 
 /**
- * Estimation input for a table cell. Confidence range is symmetric absolute delta
+ * Estimation input for a table cell. Confidence range is the symmetric absolute delta
  * on the same scale as the requirement values.
  */
 data class Estimation(

@@ -93,7 +93,7 @@ class ModelStage1Test {
         val resTotal = table.totalForType(0, RequirementType.Resource)
         val ratio = table.performanceToCostRatio(0)
 
-        // Then cell invalid, perf total excludes it (null means nothing to sum), ratio defined using perf null => null
+        // Then cell is invalid, perf total excludes it (null means nothing to sum), ratio defined using perf null => null
         assertTrue(cell is CellImpact.Invalid)
         assertNull(perfTotal)
         assertEquals(50.0, resTotal!!, 1e-9)
@@ -110,7 +110,7 @@ class ModelStage1Test {
         table.setEstimation(0, 0, Estimation(estimatedValue = 150.0)) // +50% perf
         table.setEstimation(1, 0, Estimation(estimatedValue = 100.0)) // 0% resource (spends all budget)
 
-        // When computing ratio
+        // When computing the ratio
         val ratio = table.performanceToCostRatio(0)
 
         // Then undefined (N/A)
