@@ -1,41 +1,60 @@
 # Impact Estimation Tool (IET)
 
 This project will provide a simple implementation of Tom Gilb's "Impact Estimation Table" as a Kotlin Multiplatform app,
-intially focusing on (Windows) desktop only.
+initially focusing on (Windows) desktop only.
 
 ## Data Model (IET/Model)
 
 ### IET/Model/Entities
 
 An Impact Estimation Table evaluates a number of proposed design changes (Design Ideas) against a number of desired
-changes (from Current to Goal) in values of scalar attributes in a system (Quality Requirements).
+changes in values of scalar attributes in a system (Requirements).
+
+The scalar attributes are either Performance Requirements or Resource Requirements.
 
 The scalar attributes are the table rows, and the design options are the columns, both of which are user inputs.
 
 ### IET/Model/RequirementSpec
 
-Each Quality Requirement is specified by inputs for its name/ID (free text), its Current numeric value, its Goal value,
-and the scale unit for those values (free text).
+Each Requirement is specified by inputs for its name/ID (free text), and the scale unit for its values (free text).
+
+### IET/Model/RequirementSpec/Performance
+
+Each Performance Requirement is further specified by two numeric values, Current and Goal, which may take any value.
+
+### IET/Model/RequirementSpec/Resource
+
+Each Resource Requirement is further specified by one numeric value, its Budget, which must be positive.
 
 ### IET/Model/EstimationCell
 
-Each cell has as input an estimated new value on the scale (which may be below Current or above Goal), and an optional
-+/- confidence range, also expressed as a value on that scale.
+Each cell has as input an estimated resulting value on the scale +/- confidence range, also expressed as a value on that
+scale.
 
-Each cell calculates and displays the estimated impact as a percentage of the delta from Current to Goal, along with
-the confidence interval.
+Each cell calculates and displays the estimated impact as a percentage (based on where the resulting value lies on a
+type-specific range), along with the confidence interval.
+
+### IET/Model/EstimationCell/Performance
+
+For Performance Requirements, the relevant range is between the Current and Goal values.
+
+### IET/Model/EstimationCell/Resource
+
+For Resource Requirements, the relevant range is between zero and the Budget.
 
 ### IET/Model/Grouping
 
-The Quality Requirements are separated into two groups of rows, for the two main sub-types.
+The Requirements are separated into two groups of rows, for the two main subtypes.
 
 ### IET/Model/Grouping/Performance
 
 The first group is the "Performance Requirements", where the aim may be to increase or decrease the value.
 
-### IET/Model/Grouping/Costs
+### IET/Model/Grouping/Resource
 
-The second group is the "Costs" for development of the Design Idea, which might typically be expressed as money, time, or number of people. For the costs the minimum legal value is zero, and the aim is always to minimise the value.
+The second group is the "Resource Requirements" for development of the Design Idea, which might typically be expressed
+as money, time, or number of people. For the costs the minimum legal value is zero, and the aim is always to minimise
+the value.
 
 ### IET/Model/Grouping/Totals
 
@@ -45,7 +64,7 @@ For each group, there is a separate row of "Total" cells, which sum the estimate
 
 Lastly, there is an overall output row, which lists the "Performance to Cost Ratio" for each Design Idea. This is
 simply the total percentage value of the "Performance Requirements" cells divided by the total percentage for the
-"Costs" cells, so is also a percentage.
+"Resource Requirements" cells, so is also a percentage.
 
 ## User Interface (IET/UI/Desktop)
 
