@@ -4,6 +4,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.tameter.iet.model.Estimation
 import org.tameter.iet.model.ImpactEstimationTable
+import org.tameter.iet.model.RequirementType
+import org.tameter.iet.model.CellImpact
 
 /**
  * Stage 2 (stub): Model–UI bridge API. Minimal types to allow tests to compile.
@@ -46,15 +48,77 @@ data class TableReadModel(
 class ModelBridge(
     private val table: ImpactEstimationTable,
 ) {
-    // Stub state flows. Real emissions to be implemented later.
     private val _events = MutableStateFlow<ModelEvent?>(null)
     val events: StateFlow<ModelEvent?> = _events
 
     private val _readModel = MutableStateFlow(TableReadModel(columns = emptyList(), rows = emptyList()))
     val readModel: StateFlow<TableReadModel> = _readModel
 
+    init {
+        // Populate initial snapshot
+        _readModel.value = buildReadModel()
+    }
+
     fun setEstimation(rowIndex: Int, columnIndex: Int, estimation: Estimation) {
-        // pass-through to model; event emission not yet implemented
+        // Update model
         table.setEstimation(rowIndex, columnIndex, estimation)
+
+        // Emit CellEdited with stable IDs
+        val rowId = table.requirements[rowIndex].id
+        val columnId = table.ideas[columnIndex].id
+        _events.value = ModelEvent.CellEdited(rowId = rowId, columnId = columnId)
+
+        // Rebuild read model snapshot after change
+        _readModel.value = buildReadModel()
+    }
+
+    private fun buildReadModel(): TableReadModel {
+        val columns = table.ideas.map { idea ->
+            ColumnView(id = idea.id, name = idea.name)
+        }
+
+        // Regular rows (requirements)
+        val normalRows = table.requirements.mapIndexed { reqIdx, req ->
+            val cells = table.ideas.mapIndexed { ideaIdx, idea ->
+                val impact = table.computeCellImpact(reqIdx, ideaIdx)
+                val percent = when (impact) {
+                    is CellImpact.Valid -> impact.percent
+                    is CellImpact.Invalid -> null
+                    null -> null
+                }
+                CellView(rowId = req.id, columnId = idea.id, impactPercent = percent)
+            }
+            RowView(id = req.id, isPinnedFooter = false, cells = cells)
+        }
+
+        // Pinned footer rows: at least two (Performance Totals and Resource Totals)
+        val footerRows = mutableListOf<RowView>()
+        // Build totals per idea for Performance
+        run {
+            val cells = table.ideas.mapIndexed { ideaIdx, idea ->
+                val total = table.totalForType(ideaIdx, RequirementType.Performance)
+                CellView(rowId = "__perf_totals__", columnId = idea.id, impactPercent = total)
+            }
+            footerRows += RowView(id = "__perf_totals__", isPinnedFooter = true, cells = cells)
+        }
+        // Build totals per idea for Resource
+        run {
+            val cells = table.ideas.mapIndexed { ideaIdx, idea ->
+                val total = table.totalForType(ideaIdx, RequirementType.Resource)
+                CellView(rowId = "__res_totals__", columnId = idea.id, impactPercent = total)
+            }
+            footerRows += RowView(id = "__res_totals__", isPinnedFooter = true, cells = cells)
+        }
+
+        // Optional: Ratio row (doesn't affect current tests but useful)
+        run {
+            val cells = table.ideas.mapIndexed { ideaIdx, idea ->
+                val ratio = table.performanceToCostRatio(ideaIdx)
+                CellView(rowId = "__ratio__", columnId = idea.id, impactPercent = ratio)
+            }
+            footerRows += RowView(id = "__ratio__", isPinnedFooter = true, cells = cells)
+        }
+
+        return TableReadModel(columns = columns, rows = normalRows + footerRows)
     }
 }
