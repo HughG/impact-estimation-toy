@@ -52,11 +52,11 @@ Goal: Implement core domain entities and computations suitable for UI binding.
 
 Goal: Ensure the model is UI-ready. If pure common model lacks observability, provide a bridge in desktop layer.
 
-- [x] Use Kotlin `StateFlow`/`MutableStateFlow` in common as the mechanism of observability.
+- [x] Use Kotlin `SharedFlow`/`MutableSharedFlow` in common as the mechanism of observability.
 - [x] Define events: row/column added, removed, reordered; cell edited; metadata changed; recompute complete.
-  - Note: Event types are defined and `CellEdited` is emitted on edits; `RecomputeComplete` emission sequencing is not implemented yet (covered by new failing tests).
+  - Note: Event types are defined and `CellEdited` is emitted on edits; `RecomputeComplete` is emitted after cell edits. Emission after structural operations (add/remove/reorder) is not implemented yet (now covered by new failing tests).
 - [x] Provide stable identifiers for rows and columns to correlate UI cells.
-- [ ] Provide operations to add/remove/reorder rows and columns.
+- [x] Provide operations to add/remove/reorder rows and columns.
 - [x] Provide operation to modify cell contents.
 - [x] Provide derived read models optimized for UI (e.g., flattened rows with totals and pinned footer rows).
 
