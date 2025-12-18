@@ -24,29 +24,29 @@ This plan outlines staged implementation for the Impact Estimation Tool (IET) fo
 
 Goal: Implement core domain entities and computations suitable for UI binding.
 
-- [ ] Entities: `Requirement` (id/name, unit, type: Performance|Resource).
-- [ ] Requirement specs:
-  - [ ] Performance: `current`, `goal` (both numeric; any value allowed).
-  - [ ] Resource: `budget` (numeric; must be positive).
-- [ ] Entities: `DesignIdea` (id/name, description optional).
-- [ ] Entity: `Estimation` (estimatedValue, optional confidenceRange which, for now, is a symmetric absolute delta).
-- [ ] Table Aggregates: container that maps `QualityRequirement` × `DesignIdea` → `Estimation`.
-- [ ] Computation: Impact percentage for an estimation
-  - [ ] Performance: relative to the `current → goal` delta.
-  - [ ] Resource: relative to the `0 → budget` range.
-- [ ] Computation: Totals per group (Performance Totals, Resource Totals) across rows per column.
-- [ ] Computation: Performance-to-Cost Ratio per DesignIdea (TotalPerformance% / TotalResource%).
-- [ ] Validation: 
-  - [ ] Goal ≠ Current for Performance rows (to avoid divide-by-zero). If equal, flag validation error and exclude from totals, highlighting both the invalid cell and the column total.
-  - [ ] Where the TotalResource% is 0%, the Performance-to-Cost Ratio is undefined and should be displayed as N/A, and excluded from ordering.
-  - [ ] Resource values are minimized; minimum legal value is zero.
-  - [ ] Estimated resulting value may be below current or above goal for Performance; ≥ 0 for Resource.
-  - [ ] ConfidenceRange is non-negative and interpretable on same scale.
+- [x] Entities: `Requirement` (id/name, unit, type: Performance|Resource).
+- [x] Requirement specs:
+  - [x] Performance: `current`, `goal` (both numeric; any value allowed).
+  - [x] Resource: `budget` (numeric; must be positive).
+- [x] Entities: `DesignIdea` (id/name, description optional).
+- [x] Entity: `Estimation` (estimatedValue, optional confidenceRange which, for now, is a symmetric absolute delta).
+- [x] Table Aggregates: container that maps `QualityRequirement` × `DesignIdea` → `Estimation`.
+- [x] Computation: Impact percentage for an estimation
+  - [x] Performance: relative to the `current → goal` delta.
+  - [x] Resource: relative to the `0 → budget` range.
+- [x] Computation: Totals per group (Performance Totals, Resource Totals) across rows per column.
+- [x] Computation: Performance-to-Cost Ratio per DesignIdea (TotalPerformance% / TotalResource%).
+- [x] Validation: 
+  - [x] Goal ≠ Current for Performance rows (to avoid divide-by-zero). If equal, flag validation error and exclude from totals, highlighting both the invalid cell and the column total.
+  - [x] Where the TotalResource% is 0%, the Performance-to-Cost Ratio is undefined and should be displayed as N/A, and excluded from ordering.
+  - [x] Resource values are minimized; minimum legal value is zero.
+  - [x] Estimated resulting value may be below current or above goal for Performance; ≥ 0 for Resource.
+  - [x] ConfidenceRange is non-negative and interpretable on same scale.
 - [ ] Domain services: 
-  - [ ] Recalculation service that recomputes all dependent outputs on any change.
+  - [x] Recalculation service that recomputes all dependent outputs on any change.
   - [ ] Simple change-logging hooks to support undo/redo later.
-- [ ] Data structures prepared for stable ordering (preserve insertion order for rows/columns).
-- [ ] Bridge-friendly API: observable or callback-based change notifications for UI recomposition.
+- [x] Data structures prepared for stable ordering (preserve insertion order for rows/columns).
+- [x] Bridge-friendly API: observable or callback-based change notifications for UI recomposition.
 
 ## Stage 2 — Model–UI Bridge
 
@@ -147,8 +147,8 @@ Open Question: Any requirement for golden JSON fixtures for regression? If yes, 
 
 ### Milestone Checklist Summary
 
-- [ ] Stage 0 Foundations
-- [ ] Stage 1 Domain Model
+- [x] Stage 0 Foundations
+- [x] Stage 1 Domain Model
 - [ ] Stage 2 Model–UI Bridge
 - [ ] Stage 3 Storage
 - [ ] Stage 4 Desktop UI
