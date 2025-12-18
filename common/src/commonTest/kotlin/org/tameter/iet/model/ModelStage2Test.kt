@@ -1,17 +1,19 @@
+@file:OptIn(ExperimentalCoroutinesApi::class)
+
 package org.tameter.iet.model
 
 import org.tameter.iet.model.bridge.ModelBridge
 import org.tameter.iet.model.bridge.ModelEvent
 import org.tameter.iet.model.bridge.TableReadModel
-import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.flow.toList
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeout
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 /**
@@ -34,21 +36,21 @@ class ModelStage2Test {
         val bridge = ModelBridge(table)
 
         // When editing a cell via the bridge, capture the next two non-null events from the flow
-        runBlocking {
+        runTest {
             val events = mutableListOf<ModelEvent>()
-            val job = launch {
+            // Start the collector synchronously (UNDISPATCHED) to avoid races
+            val job = launch(start = CoroutineStart.UNDISPATCHED) {
                 bridge.events
-                    .filterNotNull()
                     .take(2)
                     .toList(events)
             }
 
             bridge.setEstimation(0, 0, Estimation(estimatedValue = 150.0))
 
-            // Ensure the test does not hang if fewer than two events are emitted
-            withTimeout(2_000) {
-                job.join()
-            }
+            // Drive the test scheduler to process all pending tasks deterministically
+            advanceUntilIdle()
+            // Bound the wait to avoid any potential hang
+            kotlinx.coroutines.withTimeout(2_000) { job.join() }
 
             // Then the events should be CellEdited followed by RecomputeComplete
             assertEquals(2, events.size, "Expected two events: CellEdited then RecomputeComplete")

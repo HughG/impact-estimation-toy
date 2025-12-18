@@ -27,6 +27,8 @@ kotlin {
         val commonTest by getting {
             dependencies {
                 implementation(kotlin("test"))
+                // Coroutine test utilities for deterministic Flow testing in commonTest
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
             }
         }
         val desktopMain by getting {

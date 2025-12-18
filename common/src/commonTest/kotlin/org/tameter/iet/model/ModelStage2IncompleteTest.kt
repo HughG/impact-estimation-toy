@@ -1,7 +1,18 @@
+@file:OptIn(ExperimentalCoroutinesApi::class)
+
 package org.tameter.iet.model
 
 import org.tameter.iet.model.bridge.ModelBridge
 import org.tameter.iet.model.bridge.ModelEvent
+import kotlinx.coroutines.CoroutineStart
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.withTimeout
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
@@ -24,13 +35,25 @@ class ModelStage2IncompleteTest {
         val table = ImpactEstimationTable(requirements = listOf(perf, res), ideas = listOf(idea))
         val bridge = ModelBridge(table)
 
-        // When editing a cell
-        bridge.setEstimation(0, 0, Estimation(estimatedValue = 150.0))
+        // When editing a cell, subscribe to events first to avoid missing emissions
+        runTest {
+            val ch = Channel<ModelEvent>(capacity = 2)
+            val collector = launch(start = CoroutineStart.UNDISPATCHED) {
+                bridge.events
+                    .take(2)
+                    .collect { e -> ch.trySend(e) }
+            }
 
-        // Then the bridge should emit RecomputeComplete after recomputation
-        // (Currently not implemented; this test captures the requirement.)
-        val evt = bridge.events.value
-        assertTrue(evt is ModelEvent.RecomputeComplete, "Expected RecomputeComplete event after edit")
+            bridge.setEstimation(0, 0, Estimation(estimatedValue = 150.0))
+            advanceUntilIdle()
+
+            // Then the bridge should emit CellEdited then RecomputeComplete
+            val first = withTimeout(1_500) { ch.receive() }
+            val second = withTimeout(1_500) { ch.receive() }
+            collector.cancel()
+            assertTrue(first is ModelEvent.CellEdited, "First event should be CellEdited")
+            assertTrue(second is ModelEvent.RecomputeComplete, "Second event should be RecomputeComplete")
+        }
     }
 
     @Test
@@ -38,15 +61,24 @@ class ModelStage2IncompleteTest {
         // Given an empty table/bridge
         val bridge = ModelBridge(ImpactEstimationTable())
 
-        // When adding a row via the bridge
-        val newReq = PerformanceRequirement("NewPerf", "ms", current = 0.0, goal = 100.0)
-        bridge.addRow(newReq)
+        runTest {
+            // When adding a row via the bridge
+            val ch = Channel<ModelEvent>(capacity = 1)
+            val collector = launch(start = CoroutineStart.UNDISPATCHED) {
+                val e = bridge.events.first()
+                ch.trySend(e)
+            }
+            val newReq = PerformanceRequirement("NewPerf", "ms", current = 0.0, goal = 100.0)
+            bridge.addRow(newReq)
+            advanceUntilIdle()
 
-        // Then RowAdded event is emitted and read model includes the row
-        val evt = bridge.events.value
-        assertTrue(evt is ModelEvent.RowAdded, "Expected RowAdded event")
-        val rm = bridge.readModel.value
-        assertTrue(rm.rows.any { it.id == "NewPerf" }, "Read model should include newly added row")
+            // Then RowAdded event is emitted and read model includes the row
+            val evt = withTimeout(1_500) { ch.receive() }
+            collector.cancel()
+            assertTrue(evt is ModelEvent.RowAdded, "Expected RowAdded event")
+            val rm = bridge.readModel.value
+            assertTrue(rm.rows.any { it.id == "NewPerf" }, "Read model should include newly added row")
+        }
     }
 
     @Test
@@ -54,15 +86,24 @@ class ModelStage2IncompleteTest {
         // Given an empty table/bridge
         val bridge = ModelBridge(ImpactEstimationTable())
 
-        // When adding a column via the bridge
-        val newIdea = DesignIdea("NewIdea", name = "Idea X")
-        bridge.addColumn(newIdea)
+        runTest {
+            // When adding a column via the bridge
+            val ch = Channel<ModelEvent>(capacity = 1)
+            val collector = launch(start = CoroutineStart.UNDISPATCHED) {
+                val e = bridge.events.first()
+                ch.trySend(e)
+            }
+            val newIdea = DesignIdea("NewIdea", name = "Idea X")
+            bridge.addColumn(newIdea)
+            advanceUntilIdle()
 
-        // Then ColumnAdded event is emitted and read model includes the column
-        val evt = bridge.events.value
-        assertTrue(evt is ModelEvent.ColumnAdded, "Expected ColumnAdded event")
-        val rm = bridge.readModel.value
-        assertTrue(rm.columns.any { it.id == "NewIdea" }, "Read model should include newly added column")
+            // Then ColumnAdded event is emitted and read model includes the column
+            val evt = withTimeout(1_500) { ch.receive() }
+            collector.cancel()
+            assertTrue(evt is ModelEvent.ColumnAdded, "Expected ColumnAdded event")
+            val rm = bridge.readModel.value
+            assertTrue(rm.columns.any { it.id == "NewIdea" }, "Read model should include newly added column")
+        }
     }
 
     @Test
@@ -72,17 +113,26 @@ class ModelStage2IncompleteTest {
         val r2 = ResourceRequirement("R2", "$", budget = 5.0)
         val bridge = ModelBridge(ImpactEstimationTable(requirements = listOf(r1, r2)))
 
-        // When reordering rows
-        bridge.reorderRows(0, 1)
+        runTest {
+            // When reordering rows
+            val ch = Channel<ModelEvent>(capacity = 1)
+            val collector = launch(start = CoroutineStart.UNDISPATCHED) {
+                val e = bridge.events.first()
+                ch.trySend(e)
+            }
+            bridge.reorderRows(0, 1)
+            advanceUntilIdle()
 
-        // Then RowReordered event is emitted
-        val evt = bridge.events.value
-        assertTrue(evt is ModelEvent.RowReordered, "Expected RowReordered event")
+            // Then RowReordered event is emitted
+            val evt = withTimeout(1_500) { ch.receive() }
+            collector.cancel()
+            assertTrue(evt is ModelEvent.RowReordered, "Expected RowReordered event")
 
-        // And the read model reflects the new order (non-footer rows only)
-        val rm = bridge.readModel.value
-        val nonFooterIds = rm.rows.filter { !it.isPinnedFooter }.map { it.id }
-        assertEquals(listOf("R2", "R1"), nonFooterIds, "Rows should be reordered in read model")
+            // And the read model reflects the new order (non-footer rows only)
+            val rm = bridge.readModel.value
+            val nonFooterIds = rm.rows.filter { !it.isPinnedFooter }.map { it.id }
+            assertEquals(listOf("R2", "R1"), nonFooterIds, "Rows should be reordered in read model")
+        }
     }
 
     @Test
@@ -92,17 +142,26 @@ class ModelStage2IncompleteTest {
         val c2 = DesignIdea("C2", name = "Idea 2")
         val bridge = ModelBridge(ImpactEstimationTable(ideas = listOf(c1, c2)))
 
-        // When reordering columns
-        bridge.reorderColumns(0, 1)
+        runTest {
+            // When reordering columns
+            val ch = Channel<ModelEvent>(capacity = 1)
+            val collector = launch(start = CoroutineStart.UNDISPATCHED) {
+                val e = bridge.events.first()
+                ch.trySend(e)
+            }
+            bridge.reorderColumns(0, 1)
+            advanceUntilIdle()
 
-        // Then ColumnReordered event is emitted
-        val evt = bridge.events.value
-        assertTrue(evt is ModelEvent.ColumnReordered, "Expected ColumnReordered event")
+            // Then ColumnReordered event is emitted
+            val evt = withTimeout(1_500) { ch.receive() }
+            collector.cancel()
+            assertTrue(evt is ModelEvent.ColumnReordered, "Expected ColumnReordered event")
 
-        // And the read model reflects the new column order
-        val rm = bridge.readModel.value
-        val colIds = rm.columns.map { it.id }
-        assertEquals(listOf("C2", "C1"), colIds, "Columns should be reordered in read model")
+            // And the read model reflects the new column order
+            val rm = bridge.readModel.value
+            val colIds = rm.columns.map { it.id }
+            assertEquals(listOf("C2", "C1"), colIds, "Columns should be reordered in read model")
+        }
     }
 
     @Test
@@ -111,14 +170,23 @@ class ModelStage2IncompleteTest {
         val r = PerformanceRequirement("Rmv", "ms", current = 0.0, goal = 10.0)
         val bridge = ModelBridge(ImpactEstimationTable(requirements = listOf(r)))
 
-        // When removing the row by ID
-        bridge.removeRow("Rmv")
+        runTest {
+            // When removing the row by ID
+            val ch = Channel<ModelEvent>(capacity = 1)
+            val collector = launch(start = CoroutineStart.UNDISPATCHED) {
+                val e = bridge.events.first()
+                ch.trySend(e)
+            }
+            bridge.removeRow("Rmv")
+            advanceUntilIdle()
 
-        // Then RowRemoved event is emitted and read model no longer contains it
-        val evt = bridge.events.value
-        assertTrue(evt is ModelEvent.RowRemoved, "Expected RowRemoved event")
-        val rm = bridge.readModel.value
-        assertTrue(rm.rows.none { it.id == "Rmv" }, "Removed row should not be present in read model")
+            // Then RowRemoved event is emitted and read model no longer contains it
+            val evt = withTimeout(1_500) { ch.receive() }
+            collector.cancel()
+            assertTrue(evt is ModelEvent.RowRemoved, "Expected RowRemoved event")
+            val rm = bridge.readModel.value
+            assertTrue(rm.rows.none { it.id == "Rmv" }, "Removed row should not be present in read model")
+        }
     }
 
     @Test
@@ -126,13 +194,22 @@ class ModelStage2IncompleteTest {
         // Given a table with a column
         val bridge = ModelBridge(ImpactEstimationTable(ideas = listOf(DesignIdea("Cmv", name = "Idea"))))
 
-        // When removing the column by ID
-        bridge.removeColumn("Cmv")
+        runTest {
+            // When removing the column by ID
+            val ch = Channel<ModelEvent>(capacity = 1)
+            val collector = launch(start = CoroutineStart.UNDISPATCHED) {
+                val e = bridge.events.first()
+                ch.trySend(e)
+            }
+            bridge.removeColumn("Cmv")
+            advanceUntilIdle()
 
-        // Then ColumnRemoved event is emitted and read model no longer contains it
-        val evt = bridge.events.value
-        assertTrue(evt is ModelEvent.ColumnRemoved, "Expected ColumnRemoved event")
-        val rm = bridge.readModel.value
-        assertTrue(rm.columns.none { it.id == "Cmv" }, "Removed column should not be present in read model")
+            // Then ColumnRemoved event is emitted and read model no longer contains it
+            val evt = withTimeout(1_500) { ch.receive() }
+            collector.cancel()
+            assertTrue(evt is ModelEvent.ColumnRemoved, "Expected ColumnRemoved event")
+            val rm = bridge.readModel.value
+            assertTrue(rm.columns.none { it.id == "Cmv" }, "Removed column should not be present in read model")
+        }
     }
 }

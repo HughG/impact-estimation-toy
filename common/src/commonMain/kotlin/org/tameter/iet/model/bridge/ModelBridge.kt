@@ -1,6 +1,8 @@
 package org.tameter.iet.model.bridge
 
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.tameter.iet.model.Estimation
 import org.tameter.iet.model.ImpactEstimationTable
@@ -50,8 +52,8 @@ data class TableReadModel(
 class ModelBridge(
     private val table: ImpactEstimationTable,
 ) {
-    private val _events = MutableStateFlow<ModelEvent?>(null)
-    val events: StateFlow<ModelEvent?> = _events
+    private val _events = MutableSharedFlow<ModelEvent>(replay = 0, extraBufferCapacity = 64)
+    val events: SharedFlow<ModelEvent> = _events
 
     private val _readModel = MutableStateFlow(TableReadModel(columns = emptyList(), rows = emptyList()))
     val readModel: StateFlow<TableReadModel> = _readModel
@@ -68,13 +70,13 @@ class ModelBridge(
         // Emit CellEdited with stable IDs
         val rowId = table.requirements[rowIndex].id
         val columnId = table.ideas[columnIndex].id
-        _events.value = ModelEvent.CellEdited(rowId = rowId, columnId = columnId)
+        _events.tryEmit(ModelEvent.CellEdited(rowId = rowId, columnId = columnId))
 
         // Rebuild read model snapshot after change
         _readModel.value = buildReadModel()
 
         // Emit recompute completion after snapshot updated
-        _events.value = ModelEvent.RecomputeComplete
+        _events.tryEmit(ModelEvent.RecomputeComplete)
     }
 
     private fun buildReadModel(): TableReadModel {
@@ -133,7 +135,7 @@ class ModelBridge(
         table.requirements.add(requirement)
         // Update snapshot first so UI can read after event
         _readModel.value = buildReadModel()
-        _events.value = ModelEvent.RowAdded(requirement.id)
+        _events.tryEmit(ModelEvent.RowAdded(requirement.id))
     }
 
     fun removeRow(rowId: String) {
@@ -141,7 +143,7 @@ class ModelBridge(
         if (idx >= 0) {
             table.requirements.removeAt(idx)
             _readModel.value = buildReadModel()
-            _events.value = ModelEvent.RowRemoved(rowId)
+            _events.tryEmit(ModelEvent.RowRemoved(rowId))
         }
     }
 
@@ -154,13 +156,13 @@ class ModelBridge(
         if (targetIndex > table.requirements.size) targetIndex = table.requirements.size
         table.requirements.add(targetIndex, item)
         _readModel.value = buildReadModel()
-        _events.value = ModelEvent.RowReordered(fromIndex, toIndex)
+        _events.tryEmit(ModelEvent.RowReordered(fromIndex, toIndex))
     }
 
     fun addColumn(idea: DesignIdea) {
         table.ideas.add(idea)
         _readModel.value = buildReadModel()
-        _events.value = ModelEvent.ColumnAdded(idea.id)
+        _events.tryEmit(ModelEvent.ColumnAdded(idea.id))
     }
 
     fun removeColumn(columnId: String) {
@@ -168,7 +170,7 @@ class ModelBridge(
         if (idx >= 0) {
             table.ideas.removeAt(idx)
             _readModel.value = buildReadModel()
-            _events.value = ModelEvent.ColumnRemoved(columnId)
+            _events.tryEmit(ModelEvent.ColumnRemoved(columnId))
         }
     }
 
@@ -180,6 +182,6 @@ class ModelBridge(
         if (targetIndex > table.ideas.size) targetIndex = table.ideas.size
         table.ideas.add(targetIndex, item)
         _readModel.value = buildReadModel()
-        _events.value = ModelEvent.ColumnReordered(fromIndex, toIndex)
+        _events.tryEmit(ModelEvent.ColumnReordered(fromIndex, toIndex))
     }
 }
