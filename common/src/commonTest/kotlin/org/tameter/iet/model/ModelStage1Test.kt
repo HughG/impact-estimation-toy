@@ -19,17 +19,16 @@ class ModelStage1Test {
     @Test
     fun impact_for_performance_requirement_is_percentage_of_delta() {
         // Given a performance requirement with an estimate halfway between current and goal
-        val req = Requirement(
+        val req = PerformanceRequirement(
             id = "Perf1",
             unit = "ms",
-            type = RequirementType.Performance,
             current = 100.0,
             goal = 200.0,
         )
         val est = Estimation(estimatedValue = 150.0)
 
         // When computing impact
-        val impact = computeImpact(req, est)
+        val impact = req.computeImpact(est)
 
         // Then percent is 50%
         assertTrue(impact is CellImpact.Valid)
@@ -39,15 +38,14 @@ class ModelStage1Test {
     @Test
     fun impact_for_resource_requirement_is_percentage_of_budget_saved() {
         // Given a resource requirement with budget 100 and estimated spend 50 (minimize)
-        val req = Requirement(
+        val req = ResourceRequirement(
             id = "Res1",
             unit = "$",
-            type = RequirementType.Resource,
             budget = 100.0,
         )
         val est = Estimation(estimatedValue = 50.0)
 
-        val impact = computeImpact(req, est)
+        val impact = req.computeImpact(est)
 
         // (100 - 50) / 100 = 0.5 => 50%
         assertTrue(impact is CellImpact.Valid)
@@ -57,9 +55,9 @@ class ModelStage1Test {
     @Test
     fun totals_and_ratio_across_rows_per_column() {
         // Given two performance rows and one resource row, and one design idea column
-        val perfA = Requirement("P1", "ms", RequirementType.Performance, current = 100.0, goal = 200.0)
-        val perfB = Requirement("P2", "%", RequirementType.Performance, current = 20.0, goal = 50.0)
-        val res = Requirement("R1", "$", RequirementType.Resource, budget = 100.0)
+        val perfA = PerformanceRequirement("P1", "ms", current = 100.0, goal = 200.0)
+        val perfB = PerformanceRequirement("P2", "%", current = 20.0, goal = 50.0)
+        val res = ResourceRequirement("R1", "$", budget = 100.0)
         val idea = DesignIdea("D1", name = "Idea 1")
 
         val table = ImpactEstimationTable(requirements = listOf(perfA, perfB, res), ideas = listOf(idea))
@@ -82,8 +80,8 @@ class ModelStage1Test {
     @Test
     fun validation_goal_equals_current_on_performance_makes_cell_invalid_and_excluded_from_totals() {
         // Given a performance row with goal == current
-        val perf = Requirement("Pbad", "ms", RequirementType.Performance, current = 100.0, goal = 100.0)
-        val res = Requirement("R1", "$", RequirementType.Resource, budget = 100.0)
+        val perf = PerformanceRequirement("Pbad", "ms", current = 100.0, goal = 100.0)
+        val res = ResourceRequirement("R1", "$", budget = 100.0)
         val idea = DesignIdea("D1", name = "Idea 1")
         val table = ImpactEstimationTable(requirements = listOf(perf, res), ideas = listOf(idea))
         table.setEstimation(0, 0, Estimation(estimatedValue = 110.0)) // invalid perf
@@ -105,8 +103,8 @@ class ModelStage1Test {
     @Test
     fun ratio_is_undefined_when_resource_total_is_zero() {
         // Given a perf improvement but zero resource impact
-        val perf = Requirement("P1", "ms", RequirementType.Performance, current = 100.0, goal = 200.0)
-        val res = Requirement("R1", "$", RequirementType.Resource, budget = 100.0)
+        val perf = PerformanceRequirement("P1", "ms", current = 100.0, goal = 200.0)
+        val res = ResourceRequirement("R1", "$", budget = 100.0)
         val idea = DesignIdea("D1", name = "Idea 1")
         val table = ImpactEstimationTable(requirements = listOf(perf, res), ideas = listOf(idea))
         table.setEstimation(0, 0, Estimation(estimatedValue = 150.0)) // +50% perf

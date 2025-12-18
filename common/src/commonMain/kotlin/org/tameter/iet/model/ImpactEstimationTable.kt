@@ -24,7 +24,7 @@ class ImpactEstimationTable(
     fun computeCellImpact(reqIndex: Int, ideaIndex: Int): CellImpact? {
         val est = getEstimation(reqIndex, ideaIndex) ?: return null
         val req = requirements[reqIndex]
-        return computeImpact(req, est)
+        return req.computeImpact(est)
     }
 
     fun totalForType(ideaIndex: Int, type: RequirementType): Double? {
