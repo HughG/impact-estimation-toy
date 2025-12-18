@@ -4,10 +4,10 @@ package org.tameter.iet.model
  * Stage 1: Table aggregate that maintains insertion order for rows and columns.
  */
 class ImpactEstimationTable(
-    requirements: List<QualityRequirement> = emptyList(),
+    requirements: List<Requirement> = emptyList(),
     ideas: List<DesignIdea> = emptyList(),
 ) {
-    val requirements: MutableList<QualityRequirement> = requirements.toMutableList()
+    val requirements: MutableList<Requirement> = requirements.toMutableList()
     val ideas: MutableList<DesignIdea> = ideas.toMutableList()
 
     // Keyed by pair of indices (reqIdx, ideaIdx) to preserve ordering and allow stable ids via indices for now.
@@ -49,14 +49,14 @@ class ImpactEstimationTable(
     }
 
     /**
-     * Performance-to-Cost Ratio per DesignIdea: TotalPerformance% / TotalCost%.
-     * When TotalCost% is 0 or null, return null (undefined/N/A).
+     * Performance-to-Cost Ratio per DesignIdea: TotalPerformance% / TotalResource%.
+     * When TotalResource% is 0 or null, return null (undefined/N/A).
      */
     fun performanceToCostRatio(ideaIndex: Int): Double? {
         val perf = totalForType(ideaIndex, RequirementType.Performance)
-        val cost = totalForType(ideaIndex, RequirementType.Cost)
-        if (perf == null || cost == null) return null
-        if (cost == 0.0) return null
-        return perf / cost
+        val resource = totalForType(ideaIndex, RequirementType.Resource)
+        if (perf == null || resource == null) return null
+        if (resource == 0.0) return null
+        return perf / resource
     }
 }

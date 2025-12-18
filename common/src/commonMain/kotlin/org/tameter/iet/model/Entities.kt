@@ -3,12 +3,15 @@ package org.tameter.iet.model
 /**
  * Stage 1: Core entities used by the IET model.
  */
-data class QualityRequirement(
+data class Requirement(
     val id: String,
     val unit: String,
     val type: RequirementType,
-    val current: Double,
-    val goal: Double,
+    // For Performance requirements
+    val current: Double? = null,
+    val goal: Double? = null,
+    // For Resource requirements
+    val budget: Double? = null,
 )
 
 data class DesignIdea(

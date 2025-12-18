@@ -24,18 +24,23 @@ This plan outlines staged implementation for the Impact Estimation Tool (IET) fo
 
 Goal: Implement core domain entities and computations suitable for UI binding.
 
-- [ ] Entities: `QualityRequirement` (id/name, current, goal, unit, type: Performance|Cost).
+- [ ] Entities: `Requirement` (id/name, unit, type: Performance|Resource).
+- [ ] Requirement specs:
+  - [ ] Performance: `current`, `goal` (both numeric; any value allowed).
+  - [ ] Resource: `budget` (numeric; must be positive).
 - [ ] Entities: `DesignIdea` (id/name, description optional).
 - [ ] Entity: `Estimation` (estimatedValue, optional confidenceRange which, for now, is a symmetric absolute delta).
 - [ ] Table Aggregates: container that maps `QualityRequirement` × `DesignIdea` → `Estimation`.
-- [ ] Computation: Impact percentage for an estimation relative to requirement current→goal delta.
-- [ ] Computation: Totals per group (Performance Totals, Cost Totals) across rows per column.
-- [ ] Computation: Performance-to-Cost Ratio per DesignIdea (TotalPerformance% / TotalCost%).
+- [ ] Computation: Impact percentage for an estimation
+  - [ ] Performance: relative to the `current → goal` delta.
+  - [ ] Resource: relative to the `0 → budget` range.
+- [ ] Computation: Totals per group (Performance Totals, Resource Totals) across rows per column.
+- [ ] Computation: Performance-to-Cost Ratio per DesignIdea (TotalPerformance% / TotalResource%).
 - [ ] Validation: 
-  - [ ] Goal ≠ Current for performance rows (to avoid divide-by-zero). If equal, flag validation error and exclude from totals, highlighting both the invalid cell and the column total.
-  - [ ] Where the TotalCost% is 0%, the Performance-to-Cost Ratio is undefined and should be displayed as N/A, and excluded from ordering.
-  - [ ] Costs are minimized; minimum legal value is zero.
-  - [ ] Estimated value may be below current or above goal for performance; >= 0 for cost.
+  - [ ] Goal ≠ Current for Performance rows (to avoid divide-by-zero). If equal, flag validation error and exclude from totals, highlighting both the invalid cell and the column total.
+  - [ ] Where the TotalResource% is 0%, the Performance-to-Cost Ratio is undefined and should be displayed as N/A, and excluded from ordering.
+  - [ ] Resource values are minimized; minimum legal value is zero.
+  - [ ] Estimated resulting value may be below current or above goal for Performance; ≥ 0 for Resource.
   - [ ] ConfidenceRange is non-negative and interpretable on same scale.
 - [ ] Domain services: 
   - [ ] Recalculation service that recomputes all dependent outputs on any change.
@@ -79,7 +84,7 @@ Goal: Implement an editable, scrollable table with fixed headers and pinned tota
 
 - [ ] App shell and window with menu or toolbar for File (New, Open, Save, Save As), Edit (Undo/Redo), and Help.
 - [ ] Layout: scrollable table with separate panes for fixed row headers and column headers.
-- [ ] Pinned rows: group totals (Performance, Costs) and final Performance-to-Cost Ratio row.
+- [ ] Pinned rows: group totals (Performance, Resource) and final Performance-to-Cost Ratio row.
 - [ ] Row re-ordering: individual Performance and Cost rows can be dragged to re-order.
 - [ ] Column re-ordering: columns can be dragged to re-order.
 - [ ] Auto-sizing: columns/rows size to content; allow manual resize later if needed.

@@ -13,39 +13,63 @@ sealed class CellImpact {
 /**
  * Compute the impact percentage of an estimation against a requirement.
  *
- * percent = (estimated - current) / (goal - current) * 100
- * - For Performance: goal must differ from current; if equal, invalid.
- * - For Cost: values must be >= 0 (current, goal, estimate); goal may equal current (then impact is 0%).
- * - Confidence range is mapped to percent via (confidence / |goal - current|) * 100 when denominator != 0.
+ * Performance:
+ *   percent = (estimated - current) / (goal - current) * 100
+ *   - goal must differ from current; if equal, invalid.
+ *   - confidence% = (confidence / |goal - current|) * 100
+ *
+ * Resource (minimize):
+ *   percent = (budget - estimated) / budget * 100
+ *   - budget must be > 0; estimated must be >= 0.
+ *   - confidence% = (confidence / budget) * 100
  */
-fun computeImpact(req: QualityRequirement, est: Estimation): CellImpact {
+fun computeImpact(req: Requirement, est: Estimation): CellImpact {
     val errors = mutableListOf<ValidationError>()
-
-    if (req.type == RequirementType.Cost) {
-        if (req.current < 0) errors += ValidationError("Cost current must be >= 0")
-        if (req.goal < 0) errors += ValidationError("Cost goal must be >= 0")
-        if (est.estimatedValue < 0) errors += ValidationError("Cost estimated value must be >= 0")
-    }
-
-    val delta = req.goal - req.current
-    if (req.type == RequirementType.Performance && delta == 0.0) {
-        errors += ValidationError("Performance requirement goal must differ from current")
-    }
 
     val conf = est.confidenceRange
     if (conf != null && conf < 0) {
         errors += ValidationError("Confidence range must be >= 0")
     }
 
-    if (errors.isNotEmpty()) return CellImpact.Invalid(errors)
+    when (req.type) {
+        RequirementType.Performance -> {
+            val current = req.current
+            val goal = req.goal
+            if (current == null || goal == null) {
+                errors += ValidationError("Performance requirement must have current and goal")
+                return CellImpact.Invalid(errors)
+            }
+            val requiredDelta = goal - current
+            if (requiredDelta == 0.0) {
+                errors += ValidationError("Performance requirement goal must differ from current")
+            }
 
-    // If delta is zero but not forbidden (e.g., Cost), treat impact as 0 when estimate == current; else +/-Inf? We choose 0.
-    if (delta == 0.0) {
-        val plusMinus = if (conf != null && conf > 0) null else null
-        return CellImpact.Valid(percent = 0.0, confidencePlusMinus = plusMinus)
+            if (errors.isNotEmpty()) return CellImpact.Invalid(errors)
+
+            val estimatedDelta = est.estimatedValue - current
+            val percent = estimatedDelta / requiredDelta * 100.0
+            val confPct = conf?.let { (it / kotlin.math.abs(requiredDelta)) * 100.0 }
+            return CellImpact.Valid(percent = percent, confidencePlusMinus = confPct)
+        }
+
+        RequirementType.Resource -> {
+            val budget = req.budget
+            if (budget == null) {
+                errors += ValidationError("Resource requirement must have a budget")
+                return CellImpact.Invalid(errors)
+            }
+            if (budget <= 0.0) {
+                errors += ValidationError("Resource budget must be > 0")
+            }
+            if (est.estimatedValue < 0.0) {
+                errors += ValidationError("Resource estimated value must be >= 0")
+            }
+
+            if (errors.isNotEmpty()) return CellImpact.Invalid(errors)
+
+            val percent = (budget - est.estimatedValue) / budget * 100.0
+            val confPct = conf?.let { (it / budget) * 100.0 }
+            return CellImpact.Valid(percent = percent, confidencePlusMinus = confPct)
+        }
     }
-
-    val percent = (est.estimatedValue - req.current) / delta * 100.0
-    val confPct = conf?.let { (it / kotlin.math.abs(delta)) * 100.0 }
-    return CellImpact.Valid(percent = percent, confidencePlusMinus = confPct)
 }

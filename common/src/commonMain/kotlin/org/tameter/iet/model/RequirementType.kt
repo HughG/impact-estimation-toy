@@ -5,5 +5,5 @@ package org.tameter.iet.model
  */
 enum class RequirementType {
     Performance,
-    Cost
+    Resource
 }
