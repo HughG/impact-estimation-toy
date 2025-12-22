@@ -26,6 +26,44 @@ class ImpactEstimationTable(
         cells[reqId to ideaId] = estimation
     }
 
+    fun updateRequirement(index: Int, updated: Requirement) {
+        if (index !in requirements.indices) throw IllegalArgumentException("Requirement index out of bounds")
+        val oldId = requirements[index].id
+        val newId = updated.id
+        
+        // If ID changed, we need to update the cells map keys
+        if (oldId != newId) {
+            val keysToUpdate = cells.keys.filter { it.first == oldId }
+            keysToUpdate.forEach { oldKey ->
+                val estimation = cells.remove(oldKey)
+                if (estimation != null) {
+                    cells[newId to oldKey.second] = estimation
+                }
+            }
+        }
+        
+        requirements[index] = updated
+    }
+
+    fun updateDesignIdea(index: Int, updated: DesignIdea) {
+        if (index !in ideas.indices) throw IllegalArgumentException("DesignIdea index out of bounds")
+        val oldId = ideas[index].id
+        val newId = updated.id
+        
+        // If ID changed, we need to update the cells map keys
+        if (oldId != newId) {
+            val keysToUpdate = cells.keys.filter { it.second == oldId }
+            keysToUpdate.forEach { oldKey ->
+                val estimation = cells.remove(oldKey)
+                if (estimation != null) {
+                    cells[oldKey.first to newId] = estimation
+                }
+            }
+        }
+        
+        ideas[index] = updated
+    }
+
     fun getEstimation(reqIndex: Int, ideaIndex: Int): Estimation? {
         val reqId = requirements.getOrNull(reqIndex)?.id ?: return null
         val ideaId = ideas.getOrNull(ideaIndex)?.id ?: return null

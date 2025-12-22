@@ -237,4 +237,83 @@ class ModelBridgeOperationsTest {
             assertEquals(50.0, r1View.cells[0].impactPercent, "R1 should still have its estimation")
         }
     }
+
+    @Test
+    fun requirement_update_emits_event_and_updates_read_model() {
+        // Given a table with one requirement
+        val r1 = PerformanceRequirement("R1", "ms", current = 0.0, goal = 10.0)
+        val i1 = DesignIdea("I1")
+        val table = ImpactEstimationTable(requirements = listOf(r1), ideas = listOf(i1))
+        table.setEstimation(0, 0, Estimation(5.0))
+        val bridge = ModelBridge(table)
+
+        runTest {
+            // When updating the requirement (ID change)
+            val ch = Channel<ModelEvent>(capacity = 1)
+            val collector = launch(start = CoroutineStart.UNDISPATCHED) {
+                // Collect events until MetadataChanged
+                bridge.events.collect { 
+                    if (it is ModelEvent.MetadataChanged) {
+                        ch.send(it)
+                    }
+                }
+            }
+            val updated = PerformanceRequirement("R1_New", "s", current = 0.0, goal = 1.0)
+            bridge.updateRequirement("R1", updated)
+            advanceUntilIdle()
+
+            // Then MetadataChanged event is emitted
+            val evt = withTimeout(1_500) { ch.receive() }
+            collector.cancel()
+            assertEquals("requirement", (evt as ModelEvent.MetadataChanged).what)
+
+            // And read model is updated
+            val rm = bridge.readModel.value
+            val row = rm.rows.find { it.id == "R1_New" }
+            assertEquals("s", row?.unit)
+            assertEquals(0.0, row?.performanceDetails?.current)
+            assertEquals(1.0, row?.performanceDetails?.goal)
+
+            // And estimations are preserved for the new ID
+            assertEquals(5.0, row?.cells?.find { it.columnId == "I1" }?.estimatedValue)
+        }
+    }
+
+    @Test
+    fun idea_update_emits_event_and_updates_read_model() {
+        // Given a table with one idea
+        val r1 = PerformanceRequirement("R1", "ms", current = 0.0, goal = 10.0)
+        val i1 = DesignIdea("I1")
+        val table = ImpactEstimationTable(requirements = listOf(r1), ideas = listOf(i1))
+        table.setEstimation(0, 0, Estimation(5.0))
+        val bridge = ModelBridge(table)
+
+        runTest {
+            // When updating the idea (ID change)
+            val ch = Channel<ModelEvent>(capacity = 1)
+            val collector = launch(start = CoroutineStart.UNDISPATCHED) {
+                bridge.events.collect { 
+                    if (it is ModelEvent.MetadataChanged) {
+                        ch.send(it)
+                    }
+                }
+            }
+            val updated = DesignIdea("I1_New")
+            bridge.updateDesignIdea("I1", updated)
+            advanceUntilIdle()
+
+            // Then MetadataChanged event is emitted
+            val evt = withTimeout(1_500) { ch.receive() }
+            collector.cancel()
+            assertEquals("idea", (evt as ModelEvent.MetadataChanged).what)
+
+            // And read model is updated
+            val rm = bridge.readModel.value
+            assertTrue(rm.columns.any { it.id == "I1_New" })
+
+            // And estimations are preserved for the new ID
+            val row = rm.rows.find { it.id == "R1" }
+            assertEquals(5.0, row?.cells?.find { it.columnId == "I1_New" }?.estimatedValue)
+        }
+    }
 }

@@ -1,11 +1,15 @@
 package org.tameter.iet.ui
 
-import androidx.compose.foundation.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.Divider
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
@@ -13,21 +17,32 @@ import androidx.compose.material.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.isShiftPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
-import kotlin.math.roundToInt
 import org.tameter.common.HorizontalScrollbar
 import org.tameter.common.VerticalScrollbar
 import org.tameter.common.rememberScrollbarAdapter
+import org.tameter.iet.model.DesignIdea
+import org.tameter.iet.model.Estimation
+import org.tameter.iet.model.PerformanceRequirement
+import org.tameter.iet.model.ResourceRequirement
 import org.tameter.iet.model.bridge.ModelBridge
 import org.tameter.iet.model.bridge.RowType
 import org.tameter.iet.model.bridge.TableReadModel
 import org.tameter.iet.policy.NumberPolicy
+import kotlin.math.roundToInt
 
 @Composable
 fun IetTable(modelBridge: ModelBridge, inlineTotals: Boolean = false) {
@@ -220,7 +235,17 @@ private fun HeaderRow(
                         color = MaterialTheme.colors.primary
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Text(column.id, fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+                            EditableField(
+                                value = column.id,
+                                onValueChange = { newId ->
+                                    if (newId != column.id) {
+                                        modelBridge.updateDesignIdea(column.id, DesignIdea(newId))
+                                    }
+                                },
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                                placeholder = "Idea name",
+                                textColor = MaterialTheme.colors.onPrimary
+                            )
                         }
                     }
                 }
@@ -229,6 +254,80 @@ private fun HeaderRow(
         // Spacer for vertical scrollbar
         Spacer(modifier = Modifier.width(12.dp))
     }
+}
+
+@Composable
+private fun EditableField(
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    isCaption: Boolean = false,
+    placeholder: String = "",
+    textColor: Color = Color.Unspecified
+) {
+    val focusManager = LocalFocusManager.current
+    var textState by remember(value) { mutableStateOf(value) }
+
+    val onCommit = {
+        if (textState != value) {
+            onValueChange(textState)
+        }
+    }
+
+    BasicTextField(
+        value = textState,
+        onValueChange = { textState = it },
+        modifier = modifier
+            .onKeyEvent {
+                if (it.key == Key.Enter) {
+                    onCommit()
+                    focusManager.moveFocus(FocusDirection.Down)
+                    true
+                } else if (it.key == Key.DirectionUp) {
+                    onCommit()
+                    focusManager.moveFocus(FocusDirection.Up)
+                    true
+                } else if (it.key == Key.DirectionDown) {
+                    onCommit()
+                    focusManager.moveFocus(FocusDirection.Down)
+                    true
+                } else if (it.key == Key.Tab) {
+                    onCommit()
+                    if (it.isShiftPressed) {
+                        focusManager.moveFocus(FocusDirection.Previous)
+                    } else {
+                        focusManager.moveFocus(FocusDirection.Next)
+                    }
+                    true
+                } else {
+                    false
+                }
+            }
+            .onFocusChanged { 
+                if (!it.isFocused) {
+                    onCommit()
+                }
+            },
+        textStyle = if (isCaption) {
+            MaterialTheme.typography.caption.copy(color = if (textColor != Color.Unspecified) textColor else Color.Gray, textAlign = TextAlign.Center)
+        } else {
+            MaterialTheme.typography.body1.copy(color = textColor, textAlign = TextAlign.Center, fontWeight = if (textColor != Color.Unspecified) FontWeight.Bold else FontWeight.Normal)
+        },
+        singleLine = true,
+        decorationBox = { innerTextField ->
+            Box(contentAlignment = Alignment.Center) {
+                if (textState.isEmpty() && placeholder.isNotEmpty()) {
+                    Text(
+                        text = placeholder,
+                        style = if (isCaption) MaterialTheme.typography.caption else MaterialTheme.typography.body1,
+                        color = Color.LightGray,
+                        textAlign = TextAlign.Center
+                    )
+                }
+                innerTextField()
+            }
+        }
+    )
 }
 
 @Composable
@@ -300,27 +399,120 @@ private fun DataRow(
             border = BorderStroke(0.5.dp, Color.LightGray)
         ) {
             Column(modifier = Modifier.padding(horizontal = 8.dp), verticalArrangement = Arrangement.Center) {
-                Text(
-                    text = formatRowName(row.id),
-                    fontWeight = if (isTotal) FontWeight.Bold else FontWeight.Normal,
-                    maxLines = 1
-                )
-                if (!isTotal && !isPinned) {
-                    val detailText = when {
-                        row.performanceDetails != null -> {
-                            "${row.performanceDetails.current} -> ${row.performanceDetails.goal} ${row.unit}"
+                if (isTotal || isPinned) {
+                    Text(
+                        text = formatRowName(row.id),
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
+                } else {
+                    EditableField(
+                        value = row.id,
+                        onValueChange = { newId ->
+                            if (newId != row.id) {
+                                val currentReq = modelBridge.readModel.value.rows.find { it.id == row.id }
+                                val req = when (row.type) {
+                                    RowType.Performance -> PerformanceRequirement(
+                                        id = newId,
+                                        unit = row.unit,
+                                        current = row.performanceDetails?.current ?: 0.0,
+                                        goal = row.performanceDetails?.goal ?: 0.0
+                                    )
+                                    RowType.Resource -> ResourceRequirement(
+                                        id = newId,
+                                        unit = row.unit,
+                                        budget = row.resourceDetails?.budget ?: 0.0
+                                    )
+                                    else -> null
+                                }
+                                req?.let { modelBridge.updateRequirement(row.id, it) }
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        when (row.type) {
+                            RowType.Performance -> {
+                                EditableField(
+                                    value = row.performanceDetails?.current?.toString() ?: "",
+                                    onValueChange = { newValue ->
+                                        newValue.toDoubleOrNull()?.let { d ->
+                                            modelBridge.updateRequirement(row.id, PerformanceRequirement(
+                                                id = row.id,
+                                                unit = row.unit,
+                                                current = d,
+                                                goal = row.performanceDetails?.goal ?: 0.0
+                                            ))
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    isCaption = true
+                                )
+                                Text(" -> ", style = MaterialTheme.typography.caption, color = Color.Gray)
+                                EditableField(
+                                    value = row.performanceDetails?.goal?.toString() ?: "",
+                                    onValueChange = { newValue ->
+                                        newValue.toDoubleOrNull()?.let { d ->
+                                            modelBridge.updateRequirement(row.id, PerformanceRequirement(
+                                                id = row.id,
+                                                unit = row.unit,
+                                                current = row.performanceDetails?.current ?: 0.0,
+                                                goal = d
+                                            ))
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    isCaption = true
+                                )
+                            }
+                            RowType.Resource -> {
+                                Text("<= ", style = MaterialTheme.typography.caption, color = Color.Gray)
+                                EditableField(
+                                    value = row.resourceDetails?.budget?.toString() ?: "",
+                                    onValueChange = { newValue ->
+                                        newValue.toDoubleOrNull()?.let { d ->
+                                            modelBridge.updateRequirement(row.id, ResourceRequirement(
+                                                id = row.id,
+                                                unit = row.unit,
+                                                budget = d
+                                            ))
+                                        }
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    isCaption = true
+                                )
+                            }
+                            else -> {}
                         }
-                        row.resourceDetails != null -> {
-                            "<= ${row.resourceDetails.budget} ${row.unit}"
-                        }
-                        else -> ""
-                    }
-                    if (detailText.isNotEmpty()) {
-                        Text(
-                            text = detailText,
-                            style = MaterialTheme.typography.caption,
-                            color = Color.Gray,
-                            maxLines = 1
+                        EditableField(
+                            value = row.unit,
+                            onValueChange = { newUnit ->
+                                val req = when (row.type) {
+                                    RowType.Performance -> PerformanceRequirement(
+                                        id = row.id,
+                                        unit = newUnit,
+                                        current = row.performanceDetails?.current ?: 0.0,
+                                        goal = row.performanceDetails?.goal ?: 0.0
+                                    )
+                                    RowType.Resource -> ResourceRequirement(
+                                        id = row.id,
+                                        unit = newUnit,
+                                        budget = row.resourceDetails?.budget ?: 0.0
+                                    )
+                                    else -> null
+                                }
+                                req?.let { modelBridge.updateRequirement(row.id, it) }
+                            },
+                            modifier = Modifier.width(40.dp),
+                            isCaption = true,
+                            placeholder = "unit"
                         )
                     }
                 }
@@ -341,27 +533,55 @@ private fun DataRow(
                             verticalArrangement = Arrangement.Center,
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            val impactText = cell.impactPercent?.let { 
-                                NumberPolicy.formatPercentage(it)
-                            } ?: "N/A"
-                            val confidencePlusMinusPctText =
-                                cell.confidencePlusMinusPct?.let { NumberPolicy.formatPercentage(it) } ?: "?"
-                            Text(
-                                text = "${impactText} ±${confidencePlusMinusPctText}",
-                                fontWeight = if (isTotal) FontWeight.Bold else FontWeight.Normal,
-                                color = if (cell.impactPercent == null && !isTotal) Color.Red else Color.Unspecified
-                            )
-                            if (!isTotal && !isPinned && cell.estimatedValue != null) {
-                                val estText = if (cell.confidenceRange != null) {
-                                    "${cell.estimatedValue} ±${cell.confidenceRange}"
-                                } else {
-                                    "${cell.estimatedValue} ±?"
-                                }
+                            if (isTotal || isPinned) {
+                                val impactText = cell.impactPercent?.let { 
+                                    NumberPolicy.formatPercentage(it)
+                                } ?: "N/A"
                                 Text(
-                                    text = estText,
-                                    style = MaterialTheme.typography.caption,
-                                    color = Color.Gray
+                                    text = impactText,
+                                    fontWeight = FontWeight.Bold,
+                                    color = if (cell.impactPercent == null) Color.Red else Color.Unspecified
                                 )
+                            } else {
+                                EditableField(
+                                    value = cell.estimatedValue?.toString() ?: "",
+                                    onValueChange = { newValue ->
+                                        val d = newValue.toDoubleOrNull()
+                                        if (d != null) {
+                                            modelBridge.setEstimation(cell.rowId, cell.columnId, Estimation(d, cell.confidenceRange))
+                                        }
+                                    },
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("±", style = MaterialTheme.typography.caption, color = Color.Gray)
+                                    EditableField(
+                                        value = cell.confidenceRange?.toString() ?: "",
+                                        onValueChange = { newValue ->
+                                            val d = newValue.toDoubleOrNull()
+                                            if (d != null) {
+                                                modelBridge.setEstimation(cell.rowId, cell.columnId, Estimation(cell.estimatedValue ?: 0.0, d))
+                                            }
+                                        },
+                                        modifier = Modifier.weight(1f),
+                                        isCaption = true
+                                    )
+                                    
+                                    val impactText = cell.impactPercent?.let { 
+                                        "(${NumberPolicy.formatPercentage(it)})"
+                                    } ?: ""
+                                    if (impactText.isNotEmpty()) {
+                                        Text(
+                                            text = impactText,
+                                            style = MaterialTheme.typography.caption,
+                                            color = Color.Gray
+                                        )
+                                    }
+                                }
                             }
                         }
                     }

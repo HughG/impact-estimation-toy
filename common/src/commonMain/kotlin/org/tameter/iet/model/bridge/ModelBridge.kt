@@ -83,6 +83,17 @@ class ModelBridge(
         _readModel.value = buildReadModel()
     }
 
+    fun setEstimation(rowId: String, columnId: String, estimation: Estimation) {
+        val reqIdx = table.requirements.indexOfFirst { it.id == rowId }
+        val ideaIdx = table.ideas.indexOfFirst { it.id == columnId }
+        if (reqIdx >= 0 && ideaIdx >= 0) {
+            table.setEstimation(reqIdx, ideaIdx, estimation)
+            _events.tryEmit(ModelEvent.CellEdited(rowId = rowId, columnId = columnId))
+            _readModel.value = buildReadModel()
+            _events.tryEmit(ModelEvent.RecomputeComplete)
+        }
+    }
+
     fun setEstimation(rowIndex: Int, columnIndex: Int, estimation: Estimation) {
         // Update model
         table.setEstimation(rowIndex, columnIndex, estimation)
@@ -183,6 +194,26 @@ class ModelBridge(
         _readModel.value = buildReadModel()
         _events.tryEmit(ModelEvent.RowAdded(requirement.id))
         _events.tryEmit(ModelEvent.RecomputeComplete)
+    }
+
+    fun updateRequirement(rowId: String, updated: Requirement) {
+        val idx = table.requirements.indexOfFirst { it.id == rowId }
+        if (idx >= 0) {
+            table.updateRequirement(idx, updated)
+            _readModel.value = buildReadModel()
+            _events.tryEmit(ModelEvent.MetadataChanged("requirement"))
+            _events.tryEmit(ModelEvent.RecomputeComplete)
+        }
+    }
+
+    fun updateDesignIdea(columnId: String, updated: DesignIdea) {
+        val idx = table.ideas.indexOfFirst { it.id == columnId }
+        if (idx >= 0) {
+            table.updateDesignIdea(idx, updated)
+            _readModel.value = buildReadModel()
+            _events.tryEmit(ModelEvent.MetadataChanged("idea"))
+            _events.tryEmit(ModelEvent.RecomputeComplete)
+        }
     }
 
     fun removeRow(rowId: String) {

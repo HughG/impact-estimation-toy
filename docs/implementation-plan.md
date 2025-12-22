@@ -86,11 +86,11 @@ Goal: Implement an editable, scrollable table with fixed headers and pinned tota
 - [x] Column re-ordering: columns can be dragged to re-order.
 - [x] Requirement headers show values and units: current/goal for Performance, budget for Resource.
 - [x] Cells show estimated values and confidence ranges, as well as computed totals and ratio.
-- [ ] Auto-sizing: columns/rows size to content; allow manual resize later if needed.
-- [ ] Editing behavior: commit on Enter or focus loss; validation feedback inline.
-- [ ] Navigation: keyboard (arrows, Tab/Shift+Tab, Enter), mouse clicks; selection highlight.
-- [ ] Recalc: trigger model recomputation on edit; UI recompose via bridge.
+- [x] Editing behavior: commit on Enter or focus loss; validation feedback inline.
+- [x] Navigation: keyboard (arrows, Tab/Shift+Tab, Enter), mouse clicks; selection highlight.
+- [x] Recalc: trigger model recomputation on edit; UI recompose via bridge.
 - [ ] Accessibility: basic focus order and labels.
+- [ ] Auto-sizing: columns/rows size to content; allow manual resize later if needed.
 
 ## Stage 5 — Undo/Redo
 
