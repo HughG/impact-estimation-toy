@@ -23,9 +23,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import org.tameter.common.HorizontalScrollbar
@@ -41,15 +44,30 @@ import org.tameter.iet.model.bridge.TableReadModel
 import org.tameter.iet.policy.NumberPolicy
 import kotlin.math.roundToInt
 
+private const val ROW_HEADER_KEY = "__row_header__"
+
+private class ColumnWidthState {
+    val widths = mutableStateMapOf<String, Dp>()
+
+    fun updateWidth(key: String, width: Dp) {
+        val current = widths[key] ?: 0.dp
+        if (width > current) {
+            widths[key] = width
+        }
+    }
+}
+
 @Composable
 fun IetTable(modelBridge: ModelBridge, inlineTotals: Boolean = false) {
     val readModel by modelBridge.readModel.collectAsState()
+    val tableWidthState = remember { ColumnWidthState() }
+    val density = LocalDensity.current
 
     val horizontalScrollState = rememberScrollState()
 
     Column(modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.padding(16.dp)) {
-            HeaderRow(readModel, horizontalScrollState, modelBridge)
+            HeaderRow(readModel, horizontalScrollState, modelBridge, tableWidthState)
         }
 
         Box(modifier = Modifier.weight(1f).padding(horizontal = 16.dp)) {
@@ -66,7 +84,7 @@ fun IetTable(modelBridge: ModelBridge, inlineTotals: Boolean = false) {
                             Box(modifier = Modifier.weight(1f)) {
                                 LazyColumn(state = perfScrollState, modifier = Modifier.fillMaxSize()) {
                                     itemsIndexed(performanceRows, key = { _, row -> row.id }) { index, row ->
-                                        DataRow(row, horizontalScrollState, modelBridge = modelBridge)
+                                        DataRow(row, horizontalScrollState, modelBridge = modelBridge, tableWidthState = tableWidthState)
                                         Divider()
                                     }
                                 }
@@ -81,7 +99,7 @@ fun IetTable(modelBridge: ModelBridge, inlineTotals: Boolean = false) {
                     // Performance Total (Fixed between groups)
                     val perfTotal = footerRows.find { it.id == "__perf_totals__" }
                     perfTotal?.let {
-                        DataRow(it, horizontalScrollState, isTotal = true, modelBridge = modelBridge)
+                        DataRow(it, horizontalScrollState, isTotal = true, modelBridge = modelBridge, tableWidthState = tableWidthState)
                         Divider(thickness = 2.dp)
                     }
 
@@ -92,7 +110,7 @@ fun IetTable(modelBridge: ModelBridge, inlineTotals: Boolean = false) {
                             Box(modifier = Modifier.weight(1f)) {
                                 LazyColumn(state = resScrollState, modifier = Modifier.fillMaxSize()) {
                                     itemsIndexed(resourceRows, key = { _, row -> row.id }) { index, row ->
-                                        DataRow(row, horizontalScrollState, modelBridge = modelBridge)
+                                        DataRow(row, horizontalScrollState, modelBridge = modelBridge, tableWidthState = tableWidthState)
                                         Divider()
                                     }
                                 }
@@ -107,7 +125,7 @@ fun IetTable(modelBridge: ModelBridge, inlineTotals: Boolean = false) {
                     // Resource Total (Fixed after Resource group)
                     val resTotal = footerRows.find { it.id == "__res_totals__" }
                     resTotal?.let {
-                        DataRow(it, horizontalScrollState, isTotal = true, modelBridge = modelBridge)
+                        DataRow(it, horizontalScrollState, isTotal = true, modelBridge = modelBridge, tableWidthState = tableWidthState)
                         Divider(thickness = 2.dp)
                     }
                 }
@@ -118,11 +136,11 @@ fun IetTable(modelBridge: ModelBridge, inlineTotals: Boolean = false) {
                         Box(modifier = Modifier.weight(1f)) {
                             LazyColumn(state = mainScrollState, modifier = Modifier.fillMaxSize()) {
                                 itemsIndexed(performanceRows, key = { _, row -> row.id }) { index, row ->
-                                    DataRow(row, horizontalScrollState, modelBridge = modelBridge)
+                                    DataRow(row, horizontalScrollState, modelBridge = modelBridge, tableWidthState = tableWidthState)
                                     Divider()
                                 }
                                 itemsIndexed(resourceRows, key = { _, row -> row.id }) { index, row ->
-                                    DataRow(row, horizontalScrollState, modelBridge = modelBridge)
+                                    DataRow(row, horizontalScrollState, modelBridge = modelBridge, tableWidthState = tableWidthState)
                                     Divider()
                                 }
                             }
@@ -148,12 +166,13 @@ fun IetTable(modelBridge: ModelBridge, inlineTotals: Boolean = false) {
 
                 pinnedToShow.forEach { row ->
                     Divider(thickness = 2.dp)
-                    DataRow(row, horizontalScrollState, isTotal = true, isPinned = true, modelBridge = modelBridge)
+                    DataRow(row, horizontalScrollState, isTotal = true, isPinned = true, modelBridge = modelBridge, tableWidthState = tableWidthState)
                 }
                 
                 Row {
                     // Fixed corner spacer
-                    Spacer(modifier = Modifier.width(200.dp))
+                    val rowHeaderWidth = tableWidthState.widths[ROW_HEADER_KEY] ?: 200.dp
+                    Spacer(modifier = Modifier.width(rowHeaderWidth.coerceAtLeast(200.dp)))
                     
                     HorizontalScrollbar(
                         adapter = rememberScrollbarAdapter(horizontalScrollState),
@@ -172,12 +191,21 @@ fun IetTable(modelBridge: ModelBridge, inlineTotals: Boolean = false) {
 private fun HeaderRow(
     readModel: TableReadModel,
     scrollState: ScrollState,
-    modelBridge: ModelBridge
+    modelBridge: ModelBridge,
+    tableWidthState: ColumnWidthState
 ) {
+    val density = LocalDensity.current
     Row(modifier = Modifier.fillMaxWidth()) {
         // Fixed corner
+        val rowHeaderWidth = tableWidthState.widths[ROW_HEADER_KEY] ?: 200.dp
         Surface(
-            modifier = Modifier.width(200.dp).height(40.dp),
+            modifier = Modifier
+                .width(IntrinsicSize.Max)
+                .widthIn(min = 200.dp.coerceAtLeast(rowHeaderWidth))
+                .height(40.dp)
+                .onSizeChanged { size ->
+                    tableWidthState.updateWidth(ROW_HEADER_KEY, with(density) { size.width.toDp() })
+                },
             color = MaterialTheme.colors.primary
         ) {
             Box(contentAlignment = Alignment.Center) {
@@ -191,10 +219,12 @@ private fun HeaderRow(
                 readModel.columns.forEachIndexed { index, column ->
                     var offsetX by remember(column.id) { mutableStateOf(0f) }
                     var isDragging by remember(column.id) { mutableStateOf(false) }
+                    val columnWidth = tableWidthState.widths[column.id] ?: 120.dp
 
                     Surface(
                         modifier = Modifier
-                            .width(120.dp)
+                            .width(IntrinsicSize.Max)
+                            .widthIn(min = 120.dp.coerceAtLeast(columnWidth))
                             .height(40.dp)
                             .zIndex(if (isDragging) 1f else 0f)
                             .graphicsLayer {
@@ -213,7 +243,8 @@ private fun HeaderRow(
                                     },
                                     onDragEnd = {
                                         isDragging = false
-                                        val numMoved = (offsetX / 120f).roundToInt()
+                                        val widthPx = with(density) { columnWidth.toPx() }
+                                        val numMoved = (offsetX / widthPx).roundToInt()
                                         if (numMoved != 0) {
                                             val targetIndex = (index + numMoved).coerceIn(0, readModel.columns.size - 1)
                                             if (targetIndex != index) {
@@ -227,6 +258,9 @@ private fun HeaderRow(
                                         offsetX = 0f
                                     }
                                 )
+                            }
+                            .onSizeChanged { size ->
+                                tableWidthState.updateWidth(column.id, with(density) { size.width.toDp() })
                             },
                         border = BorderStroke(0.5.dp, Color.LightGray),
                         color = MaterialTheme.colors.primary
@@ -314,13 +348,17 @@ private fun EditableField(
         },
         singleLine = true,
         decorationBox = { innerTextField ->
-            Box(contentAlignment = Alignment.Center) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.fillMaxWidth()
+            ) {
                 if (textState.isEmpty() && placeholder.isNotEmpty()) {
                     Text(
                         text = placeholder,
                         style = if (isCaption) MaterialTheme.typography.caption else MaterialTheme.typography.body1,
                         color = Color.LightGray,
-                        textAlign = TextAlign.Center
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
                 innerTextField()
@@ -335,16 +373,20 @@ private fun DataRow(
     scrollState: ScrollState,
     isTotal: Boolean = false,
     isPinned: Boolean = false,
-    modelBridge: ModelBridge
+    modelBridge: ModelBridge,
+    tableWidthState: ColumnWidthState
 ) {
+    val density = LocalDensity.current
     Row(modifier = Modifier.fillMaxWidth()) {
         // Row Header (Requirement Name/ID)
         var offsetY by remember(row.id) { mutableStateOf(0f) }
         var isDragging by remember(row.id) { mutableStateOf(false) }
 
+        val rowHeaderWidth = tableWidthState.widths[ROW_HEADER_KEY] ?: 200.dp
         Surface(
             modifier = Modifier
-                .width(200.dp)
+                .width(IntrinsicSize.Max)
+                .widthIn(min = 200.dp.coerceAtLeast(rowHeaderWidth))
                 .height(60.dp)
                 .zIndex(if (isDragging) 1f else 0f)
                 .graphicsLayer {
@@ -389,7 +431,10 @@ private fun DataRow(
                             )
                         }
                     } else Modifier
-                ),
+                )
+                .onSizeChanged { size ->
+                    tableWidthState.updateWidth(ROW_HEADER_KEY, with(density) { size.width.toDp() })
+                },
             color = if (isTotal) {
                 if (isPinned) MaterialTheme.colors.secondaryVariant else MaterialTheme.colors.secondary.copy(alpha = 0.1f)
             } else {
@@ -522,8 +567,15 @@ private fun DataRow(
         Box(modifier = Modifier.weight(1f).horizontalScroll(scrollState)) {
             Row {
                 row.cells.forEach { cell ->
+                    val columnWidth = tableWidthState.widths[cell.columnId] ?: 120.dp
                     Surface(
-                        modifier = Modifier.width(120.dp).height(60.dp),
+                        modifier = Modifier
+                            .width(IntrinsicSize.Max)
+                            .widthIn(min = 120.dp.coerceAtLeast(columnWidth))
+                            .height(60.dp)
+                            .onSizeChanged { size ->
+                                tableWidthState.updateWidth(cell.columnId, with(density) { size.width.toDp() })
+                            },
                         border = BorderStroke(0.5.dp, Color.LightGray),
                         color = if (isTotal && !isPinned) MaterialTheme.colors.secondary.copy(alpha = 0.05f) else Color.Transparent
                     ) {
