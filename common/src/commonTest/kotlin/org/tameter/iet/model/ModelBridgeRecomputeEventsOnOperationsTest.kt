@@ -39,7 +39,7 @@ class ModelBridgeRecomputeEventsOnOperationsTest {
                 .take(2)
                 .collect { e -> ch.trySend(e) }
         }
-        bridge.addRow(PerformanceRequirement("P_new", "ms", 0.0, 1.0))
+        bridge.addRow(PerformanceRequirement("P_new", "P_newName", "ms", 0.0, 1.0))
         advanceUntilIdle()
 
         // Then: first is RowAdded, second should be RecomputeComplete

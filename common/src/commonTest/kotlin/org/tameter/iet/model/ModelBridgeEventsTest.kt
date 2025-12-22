@@ -29,8 +29,8 @@ class ModelBridgeEventsTest {
     @Test
     fun recompute_complete_event_emitted_after_edit() {
         // Given a table and bridge
-        val perf = PerformanceRequirement("P1", "ms", current = 100.0, goal = 200.0)
-        val res = ResourceRequirement("R1", "$", budget = 100.0)
+        val perf = PerformanceRequirement("P1", "P1Name", "ms", current = 100.0, goal = 200.0)
+        val res = ResourceRequirement("R1", "R1Name", "$", budget = 100.0)
         val idea = DesignIdea("D1", name = "Idea 1")
         val table = ImpactEstimationTable(requirements = listOf(perf, res), ideas = listOf(idea))
         val bridge = ModelBridge(table)

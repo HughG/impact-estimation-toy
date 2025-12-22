@@ -26,6 +26,7 @@ class ModelDomainComputationTest {
         // Given a performance requirement with an estimate halfway between current and goal
         val req = PerformanceRequirement(
             id = "Perf1",
+            name = "P1Name",
             unit = "ms",
             current = 100.0,
             goal = 200.0,
@@ -45,6 +46,7 @@ class ModelDomainComputationTest {
         // Given a resource requirement with budget 100 and estimated spend 50 (minimize)
         val req = ResourceRequirement(
             id = "Res1",
+            name = "Res1Name",
             unit = "$",
             budget = 100.0,
         )
@@ -60,9 +62,9 @@ class ModelDomainComputationTest {
     @Test
     fun totals_and_ratio_across_rows_per_column() {
         // Given two performance rows and one resource row, and one design idea column
-        val perfA = PerformanceRequirement("P1", "ms", current = 100.0, goal = 200.0)
-        val perfB = PerformanceRequirement("P2", "%", current = 20.0, goal = 50.0)
-        val res = ResourceRequirement("R1", "$", budget = 100.0)
+        val perfA = PerformanceRequirement("P1", "P1Name", "ms", current = 100.0, goal = 200.0)
+        val perfB = PerformanceRequirement("P2", "P2Name", "%", current = 20.0, goal = 50.0)
+        val res = ResourceRequirement("R1", "R1Name", "$", budget = 100.0)
         val idea = DesignIdea("D1", name = "Idea 1")
 
         val table = ImpactEstimationTable(requirements = listOf(perfA, perfB, res), ideas = listOf(idea))
@@ -85,8 +87,8 @@ class ModelDomainComputationTest {
     @Test
     fun validation_goal_equals_current_on_performance_makes_cell_invalid_and_excluded_from_totals() {
         // Given a performance row with goal == current
-        val perf = PerformanceRequirement("Pbad", "ms", current = 100.0, goal = 100.0)
-        val res = ResourceRequirement("R1", "$", budget = 100.0)
+        val perf = PerformanceRequirement("Pbad", "PbadName", "ms", current = 100.0, goal = 100.0)
+        val res = ResourceRequirement("R1", "R1Name", "$", budget = 100.0)
         val idea = DesignIdea("D1", name = "Idea 1")
         val table = ImpactEstimationTable(requirements = listOf(perf, res), ideas = listOf(idea))
         table.setEstimation(0, 0, Estimation(estimatedValue = 110.0)) // invalid perf
@@ -108,8 +110,8 @@ class ModelDomainComputationTest {
     @Test
     fun ratio_is_undefined_when_resource_total_is_zero() {
         // Given a perf improvement but zero resource impact
-        val perf = PerformanceRequirement("P1", "ms", current = 100.0, goal = 200.0)
-        val res = ResourceRequirement("R1", "$", budget = 100.0)
+        val perf = PerformanceRequirement("P1", "P1Name", "ms", current = 100.0, goal = 200.0)
+        val res = ResourceRequirement("R1", "R1Name", "$", budget = 100.0)
         val idea = DesignIdea("D1", name = "Idea 1")
         val table = ImpactEstimationTable(requirements = listOf(perf, res), ideas = listOf(idea))
         table.setEstimation(0, 0, Estimation(estimatedValue = 150.0)) // +50% perf

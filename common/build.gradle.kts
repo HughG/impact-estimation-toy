@@ -32,6 +32,8 @@ kotlin {
                 implementation(kotlin("test"))
                 // Coroutine test utilities for deterministic Flow testing in commonTest
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.9.0")
+                // JSON schema validation (JVM only but runs in desktopTest/commonTest on JVM)
+                implementation("com.networknt:json-schema-validator:1.5.1")
             }
         }
         val desktopMain by getting {

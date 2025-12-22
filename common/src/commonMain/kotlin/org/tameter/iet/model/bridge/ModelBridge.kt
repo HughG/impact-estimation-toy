@@ -136,6 +136,7 @@ class ModelBridge(
         // Update snapshot first so UI can read after event
         _readModel.value = buildReadModel()
         _events.tryEmit(ModelEvent.RowAdded(requirement.id))
+        _events.tryEmit(ModelEvent.RecomputeComplete)
     }
 
     fun removeRow(rowId: String) {
@@ -144,6 +145,7 @@ class ModelBridge(
             table.requirements.removeAt(idx)
             _readModel.value = buildReadModel()
             _events.tryEmit(ModelEvent.RowRemoved(rowId))
+            _events.tryEmit(ModelEvent.RecomputeComplete)
         }
     }
 
@@ -157,12 +159,14 @@ class ModelBridge(
         table.requirements.add(targetIndex, item)
         _readModel.value = buildReadModel()
         _events.tryEmit(ModelEvent.RowReordered(fromIndex, toIndex))
+        _events.tryEmit(ModelEvent.RecomputeComplete)
     }
 
     fun addColumn(idea: DesignIdea) {
         table.ideas.add(idea)
         _readModel.value = buildReadModel()
         _events.tryEmit(ModelEvent.ColumnAdded(idea.id))
+        _events.tryEmit(ModelEvent.RecomputeComplete)
     }
 
     fun removeColumn(columnId: String) {
@@ -171,6 +175,7 @@ class ModelBridge(
             table.ideas.removeAt(idx)
             _readModel.value = buildReadModel()
             _events.tryEmit(ModelEvent.ColumnRemoved(columnId))
+            _events.tryEmit(ModelEvent.RecomputeComplete)
         }
     }
 
@@ -183,5 +188,6 @@ class ModelBridge(
         table.ideas.add(targetIndex, item)
         _readModel.value = buildReadModel()
         _events.tryEmit(ModelEvent.ColumnReordered(fromIndex, toIndex))
+        _events.tryEmit(ModelEvent.RecomputeComplete)
     }
 }

@@ -39,7 +39,7 @@ class ModelBridgeOperationsTest {
                 val e = bridge.events.first()
                 ch.trySend(e)
             }
-            val newReq = PerformanceRequirement("NewPerf", "ms", current = 0.0, goal = 100.0)
+            val newReq = PerformanceRequirement("NewPerf", "NewPerfName", "ms", current = 0.0, goal = 100.0)
             bridge.addRow(newReq)
             advanceUntilIdle()
 
@@ -80,8 +80,8 @@ class ModelBridgeOperationsTest {
     @Test
     fun row_reorder_emits_event_and_updates_read_model_order() {
         // Given a table with two rows
-        val r1 = PerformanceRequirement("R1", "ms", current = 0.0, goal = 10.0)
-        val r2 = ResourceRequirement("R2", "$", budget = 5.0)
+        val r1 = PerformanceRequirement("R1", "R1Name", "ms", current = 0.0, goal = 10.0)
+        val r2 = ResourceRequirement("R2", "R2Name", "$", budget = 5.0)
         val bridge = ModelBridge(ImpactEstimationTable(requirements = listOf(r1, r2)))
 
         runTest {
@@ -138,7 +138,7 @@ class ModelBridgeOperationsTest {
     @Test
     fun row_remove_emits_event_and_updates_read_model() {
         // Given a table with one row
-        val r1 = PerformanceRequirement("Rmv", "ms", current = 0.0, goal = 10.0)
+        val r1 = PerformanceRequirement("Rmv", "RmvName", "ms", current = 0.0, goal = 10.0)
         val bridge = ModelBridge(ImpactEstimationTable(requirements = listOf(r1)))
 
         runTest {

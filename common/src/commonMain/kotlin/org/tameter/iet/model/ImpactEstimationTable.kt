@@ -80,17 +80,18 @@ object ImpactEstimationTableSerializer : KSerializer<ImpactEstimationTable> {
         @kotlinx.serialization.SerialName("$" + "schema")
         val schema: String = SCHEMA_REF,
         val schemaVersion: Int = CURRENT_SCHEMA_VERSION,
-        val requirements: List<Requirement>,
-        val ideas: List<DesignIdea>,
+        val performanceRequirements: List<PerformanceRequirement>,
+        val resourceRequirements: List<ResourceRequirement>,
+        val designIdeas: List<DesignIdea>,
         val cells: List<CellSurrogate>
     )
 
     @Serializable
     private data class CellSurrogate(
-        val rowIndex: Int,
-        val colIndex: Int,
+        val requirementId: String,
+        val designId: String,
         val estimatedValue: Double,
-        val confidenceRange: Double? = null
+        val confidence: Double? = null
     )
 
     override val descriptor: SerialDescriptor = TableSurrogate.serializer().descriptor
@@ -98,15 +99,16 @@ object ImpactEstimationTableSerializer : KSerializer<ImpactEstimationTable> {
     override fun serialize(encoder: Encoder, value: ImpactEstimationTable) {
         val cellSurrogates = value.cells.map { (indices, estimation) ->
             CellSurrogate(
-                rowIndex = indices.first,
-                colIndex = indices.second,
+                requirementId = value.requirements[indices.first].id,
+                designId = value.ideas[indices.second].id,
                 estimatedValue = estimation.estimatedValue,
-                confidenceRange = estimation.confidenceRange
+                confidence = estimation.confidenceRange
             )
         }
         val surrogate = TableSurrogate(
-            requirements = value.requirements,
-            ideas = value.ideas,
+            performanceRequirements = value.requirements.filterIsInstance<PerformanceRequirement>(),
+            resourceRequirements = value.requirements.filterIsInstance<ResourceRequirement>(),
+            designIdeas = value.ideas,
             cells = cellSurrogates
         )
         encoder.encodeSerializableValue(TableSurrogate.serializer(), surrogate)
@@ -118,13 +120,18 @@ object ImpactEstimationTableSerializer : KSerializer<ImpactEstimationTable> {
             "Unsupported schemaVersion=${surrogate.schemaVersion} (expected $CURRENT_SCHEMA_VERSION)"
         }
 
-        val table = ImpactEstimationTable(surrogate.requirements, surrogate.ideas)
+        val requirements = surrogate.performanceRequirements + surrogate.resourceRequirements
+        val table = ImpactEstimationTable(requirements, surrogate.designIdeas)
+        
         surrogate.cells.forEach { cell ->
-            if (cell.rowIndex in table.requirements.indices && cell.colIndex in table.ideas.indices) {
+            val reqIndex = table.requirements.indexOfFirst { it.id == cell.requirementId }
+            val ideaIndex = table.ideas.indexOfFirst { it.id == cell.designId }
+            
+            if (reqIndex >= 0 && ideaIndex >= 0) {
                 table.setEstimation(
-                    cell.rowIndex,
-                    cell.colIndex,
-                    Estimation(cell.estimatedValue, cell.confidenceRange)
+                    reqIndex,
+                    ideaIndex,
+                    Estimation(cell.estimatedValue, cell.confidence)
                 )
             }
         }

@@ -2,6 +2,7 @@ package org.tameter.iet.model
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.Transient
 import org.tameter.iet.policy.ValidationError
 
 /**
@@ -10,7 +11,9 @@ import org.tameter.iet.policy.ValidationError
 @Serializable
 sealed class Requirement {
     abstract val id: String
+    abstract val name: String
     abstract val unit: String
+    @Transient
     abstract val type: RequirementType
 
     /**
@@ -33,10 +36,12 @@ sealed class Requirement {
 @SerialName("performance")
 data class PerformanceRequirement(
     override val id: String,
+    override val name: String,
     override val unit: String,
     val current: Double,
     val goal: Double,
 ) : Requirement() {
+    @Transient
     override val type: RequirementType = RequirementType.Performance
 
     /**
@@ -70,9 +75,11 @@ data class PerformanceRequirement(
 @SerialName("resource")
 data class ResourceRequirement(
     override val id: String,
+    override val name: String,
     override val unit: String,
     val budget: Double,
 ) : Requirement() {
+    @Transient
     override val type: RequirementType = RequirementType.Resource
 
     /**

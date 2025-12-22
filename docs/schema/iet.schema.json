@@ -1,6 +1,6 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "docs/schema/iet.schema.json",
+  "$id": "https://tameter.org/iet.schema.json",
   "title": "Impact Estimation Tool (IET) File",
   "description": "Schema for Impact Estimation Tool saved files. See docs/examples/sample-iet.json for an example.",
   "type": "object",
@@ -36,13 +36,13 @@
       "items": { "$ref": "#/$defs/Cell" }
     }
   },
-  "required": ["schemaVersion", "qualityRequirements", "designIdeas", "cells"],
+  "required": ["schemaVersion", "performanceRequirements", "resourceRequirements", "designIdeas", "cells"],
   "$defs": {
     "NonEmptyString": {
       "type": "string",
       "minLength": 1
     },
-    "QualityRequirement": {
+    "PerformanceRequirement": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
@@ -52,7 +52,7 @@
         "goal": { "type": "number", "description": "Target (goal) value on the unit's scale." },
         "unit": { "$ref": "#/$defs/NonEmptyString", "description": "Scale unit label (e.g., 'ms', 'hours')." }
       },
-      "required": ["id", "name", "current", "goal", "unit", "type"]
+      "required": ["id", "name", "current", "goal", "unit"]
     },
     "ResourceRequirement": {
       "type": "object",
@@ -63,14 +63,15 @@
         "budget": { "type": "number", "description": "Budget (target maximum) value on the unit's scale." },
         "unit": { "$ref": "#/$defs/NonEmptyString", "description": "Scale unit label (e.g., 'USD', 'hours')." }
       },
-      "required": ["id", "name", "current", "goal", "unit", "type"]
+      "required": ["id", "name", "budget", "unit"]
     },
     "DesignIdea": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
         "id": { "$ref": "#/$defs/NonEmptyString", "description": "Stable identifier for the design idea (e.g., 'IdeaA')." },
-        "name": { "$ref": "#/$defs/NonEmptyString", "description": "Human-readable name." }
+        "name": { "$ref": "#/$defs/NonEmptyString", "description": "Human-readable name." },
+        "description": { "type": ["string", "null"], "description": "Optional description." }
       },
       "required": ["id", "name"]
     },
@@ -78,7 +79,7 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "requirementId": { "$ref": "#/$defs/NonEmptyString", "description": "References QualityRequirement.id" },
+        "requirementId": { "$ref": "#/$defs/NonEmptyString", "description": "References PerformanceRequirement.id or ResourceRequirement.id" },
         "designId": { "$ref": "#/$defs/NonEmptyString", "description": "References DesignIdea.id" },
         "estimatedValue": { "type": "number", "description": "Estimated new value on the requirement's unit scale." },
         "confidence": { "type": "number", "minimum": 0, "description": "+/- confidence range on the same scale (optional)." }
