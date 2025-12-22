@@ -13,9 +13,7 @@ version = "1.0-SNAPSHOT"
 kotlin {
     // Configure JVM toolchain at the extension level (Kotlin 2.0+)
     jvmToolchain(21)
-    jvm {
-        withJava()
-    }
+    jvm()
     @Suppress("unused")
     sourceSets {
         val jvmMain by getting {

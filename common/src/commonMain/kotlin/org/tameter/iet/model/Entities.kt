@@ -1,10 +1,13 @@
 package org.tameter.iet.model
 
+import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 import org.tameter.iet.policy.ValidationError
 
 /**
  * Stage 1: Core entities used by the IET model.
  */
+@Serializable
 sealed class Requirement {
     abstract val id: String
     abstract val unit: String
@@ -26,6 +29,8 @@ sealed class Requirement {
     }
 }
 
+@Serializable
+@SerialName("performance")
 data class PerformanceRequirement(
     override val id: String,
     override val unit: String,
@@ -61,6 +66,8 @@ data class PerformanceRequirement(
     }
 }
 
+@Serializable
+@SerialName("resource")
 data class ResourceRequirement(
     override val id: String,
     override val unit: String,
@@ -97,6 +104,7 @@ data class ResourceRequirement(
     }
 }
 
+@Serializable
 data class DesignIdea(
     val id: String,
     val name: String,
@@ -107,6 +115,7 @@ data class DesignIdea(
  * Estimation input for a table cell. Confidence range is the symmetric absolute delta
  * on the same scale as the requirement values.
  */
+@Serializable
 data class Estimation(
     val estimatedValue: Double,
     val confidenceRange: Double? = null,
