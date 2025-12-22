@@ -21,10 +21,7 @@ import androidx.compose.ui.focus.FocusDirection
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.isShiftPressed
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.*
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
@@ -279,6 +276,8 @@ private fun EditableField(
         onValueChange = { textState = it },
         modifier = modifier
             .onKeyEvent {
+                if (it.type != KeyEventType.KeyDown) return@onKeyEvent false
+                
                 if (it.key == Key.Enter) {
                     onCommit()
                     focusManager.moveFocus(FocusDirection.Down)
@@ -528,10 +527,10 @@ private fun DataRow(
                         border = BorderStroke(0.5.dp, Color.LightGray),
                         color = if (isTotal && !isPinned) MaterialTheme.colors.secondary.copy(alpha = 0.05f) else Color.Transparent
                     ) {
-                        Column(
-                            modifier = Modifier.fillMaxSize(),
-                            verticalArrangement = Arrangement.Center,
-                            horizontalAlignment = Alignment.CenterHorizontally
+                        Row(
+                            modifier = Modifier.fillMaxSize().padding(horizontal = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
                         ) {
                             if (isTotal || isPinned) {
                                 val impactText = cell.impactPercent?.let { 
@@ -551,36 +550,27 @@ private fun DataRow(
                                             modelBridge.setEstimation(cell.rowId, cell.columnId, Estimation(d, cell.confidenceRange))
                                         }
                                     },
-                                    modifier = Modifier.fillMaxWidth()
+                                    modifier = Modifier.weight(1f),
+                                    placeholder = "val"
                                 )
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.Center,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    Text("±", style = MaterialTheme.typography.caption, color = Color.Gray)
-                                    EditableField(
-                                        value = cell.confidenceRange?.toString() ?: "",
-                                        onValueChange = { newValue ->
-                                            val d = newValue.toDoubleOrNull()
-                                            if (d != null) {
-                                                modelBridge.setEstimation(cell.rowId, cell.columnId, Estimation(cell.estimatedValue ?: 0.0, d))
-                                            }
-                                        },
-                                        modifier = Modifier.weight(1f),
-                                        isCaption = true
+                                Text("±", style = MaterialTheme.typography.caption, color = Color.Gray)
+                                EditableField(
+                                    value = cell.confidenceRange?.toString() ?: "",
+                                    onValueChange = { newValue ->
+                                        val d = newValue.toDoubleOrNull()
+                                        modelBridge.setEstimation(cell.rowId, cell.columnId, Estimation(cell.estimatedValue ?: 0.0, d))
+                                    },
+                                    modifier = Modifier.weight(1f),
+                                    isCaption = true,
+                                    placeholder = "conf"
+                                )
+                                
+                                cell.impactPercent?.let { 
+                                    Text(
+                                        text = " (${NumberPolicy.formatPercentage(it)})",
+                                        style = MaterialTheme.typography.caption,
+                                        color = Color.Gray
                                     )
-                                    
-                                    val impactText = cell.impactPercent?.let { 
-                                        "(${NumberPolicy.formatPercentage(it)})"
-                                    } ?: ""
-                                    if (impactText.isNotEmpty()) {
-                                        Text(
-                                            text = impactText,
-                                            style = MaterialTheme.typography.caption,
-                                            color = Color.Gray
-                                        )
-                                    }
                                 }
                             }
                         }
