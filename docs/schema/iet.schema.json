@@ -15,10 +15,15 @@
       "const": 1,
       "description": "Schema version for on-disk files. Initial version is 1."
     },
-    "qualityRequirements": {
+    "performanceRequirements": {
       "type": "array",
-      "description": "List of Quality Requirements (rows). Order is significant and preserved in files/UI.",
-      "items": { "$ref": "#/$defs/QualityRequirement" }
+      "description": "List of Performance Requirements (rows). Order is significant and preserved in files/UI.",
+      "items": { "$ref": "#/$defs/PerformanceRequirement" }
+    },
+    "resourceRequirements": {
+      "type": "array",
+      "description": "List of Resource Requirements (rows). Order is significant and preserved in files/UI.",
+      "items": { "$ref": "#/$defs/ResourceRequirement" }
     },
     "designIdeas": {
       "type": "array",
@@ -45,8 +50,18 @@
         "name": { "$ref": "#/$defs/NonEmptyString", "description": "Human-readable name." },
         "current": { "type": "number", "description": "Current measured value on the unit's scale." },
         "goal": { "type": "number", "description": "Target (goal) value on the unit's scale." },
-        "unit": { "$ref": "#/$defs/NonEmptyString", "description": "Scale unit label (e.g., 'ms', 'hours')." },
-        "type": { "type": "string", "enum": ["Performance", "Cost"], "description": "Requirement group type." }
+        "unit": { "$ref": "#/$defs/NonEmptyString", "description": "Scale unit label (e.g., 'ms', 'hours')." }
+      },
+      "required": ["id", "name", "current", "goal", "unit", "type"]
+    },
+    "ResourceRequirement": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/NonEmptyString", "description": "Stable identifier for the requirement (e.g., 'Cost-DevHours')." },
+        "name": { "$ref": "#/$defs/NonEmptyString", "description": "Human-readable name." },
+        "budget": { "type": "number", "description": "Budget (target maximum) value on the unit's scale." },
+        "unit": { "$ref": "#/$defs/NonEmptyString", "description": "Scale unit label (e.g., 'USD', 'hours')." }
       },
       "required": ["id", "name", "current", "goal", "unit", "type"]
     },

@@ -72,10 +72,8 @@ Goal: Persist and load user inputs to/from JSON with a human-readable, stable or
 - [ ] Implement deserialization (load): JSON → DTO → domain; validate and normalize.
 - [ ] Implement schema migration hooks for future versions (no-op for v1).
 - [ ] Round-trip tests: domain → JSON → domain equality (ignoring computed outputs).
-
-Open Question: Exact JSON schema shape preferences (naming, nesting of cells by row or by column)? Suggest: rows list, each row has list of cell inputs ordered by design idea order.
-
-Open Question: Where to store files by default and recent-files list? Desktop-only for now; propose OS file dialog without app-managed directory.
+- [ ] Files saved to OS default location initially (Desktop? User home "Documents" folder?), with "last output folder"
+remembered between sessions.
 
 ## Stage 4 — Desktop UI (Compose)
 

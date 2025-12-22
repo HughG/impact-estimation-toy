@@ -1,22 +1,21 @@
 {
   "$schema": "../docs/schema/iet.schema.json",
   "schemaVersion": 1,
-  "qualityRequirements": [
+  "performanceRequirements": [
     {
       "id": "Perf-ResponseTime",
       "name": "Response Time",
       "current": 500,
       "goal": 200,
-      "unit": "ms",
-      "type": "Performance"
-    },
+      "unit": "ms"
+    }
+  ],
+  "resourceRequirements": [
     {
       "id": "Cost-DevHours",
       "name": "Development Effort",
-      "current": 0,
-      "goal": 0,
-      "unit": "hours",
-      "type": "Cost"
+      "budget": 168,
+      "unit": "hours"
     }
   ],
   "designIdeas": [
