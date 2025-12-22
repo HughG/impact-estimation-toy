@@ -28,6 +28,7 @@ Project focus: Kotlin Multiplatform (KMP) with primary target: Desktop (Windows,
 - Gradle: Kotlin DSL; prefer small, explicit changes. Keep toolchain stable unless requested.
 - Desktop target: JVM toolchain 11 (see desktop/build.gradle.kts). Maintain compatibility.
 - OS: Windows. Use PowerShell syntax in commands; use backslashes in paths.
+- Dependencies: Use well-known, stable versions where possible.  If you face repeated version problems with new dependencies, such as conflicts, stop and ask for help (rather than, say, dropping the dependency and adding a local implementation such as manual parsing).
 
 ## Testing Strategy
 - Run tests using the built-in "run_test" tool, so that user confirmation is not needed.

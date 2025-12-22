@@ -2,6 +2,7 @@ plugins {
     kotlin("multiplatform")
     id("org.jetbrains.compose")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("org.jetbrains.kotlin.plugin.serialization") version "2.3.0"
 }
 
 group = "org.tameter"
@@ -20,8 +21,10 @@ kotlin {
                 api(compose.runtime)
                 api(compose.foundation)
                 api(compose.material)
-                // StateFlow for Stage 2 observability
+                // SharedFlow for Stage 2 observability
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
+                // Stage 3 Storage: kotlinx.serialization for JSON in common
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
             }
         }
         val commonTest by getting {
