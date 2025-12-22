@@ -6,7 +6,6 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import org.tameter.iet.model.Estimation
 import org.tameter.iet.model.ImpactEstimationTable
-import org.tameter.iet.model.RequirementType
 import org.tameter.iet.model.CellImpact
 import org.tameter.iet.model.Requirement
 import org.tameter.iet.model.DesignIdea
@@ -29,7 +28,6 @@ sealed interface ModelEvent {
 
 data class ColumnView(
     val id: String,
-    val name: String,
 )
 
 data class CellView(
@@ -81,7 +79,7 @@ class ModelBridge(
 
     private fun buildReadModel(): TableReadModel {
         val columns = table.ideas.map { idea ->
-            ColumnView(id = idea.id, name = idea.name)
+            ColumnView(id = idea.id)
         }
 
         // Regular rows (requirements)
@@ -103,7 +101,7 @@ class ModelBridge(
         // Build totals per idea for Performance
         run {
             val cells = table.ideas.mapIndexed { ideaIdx, idea ->
-                val total = table.totalForType(ideaIdx, RequirementType.Performance)
+                val total = table.totalPerformance(ideaIdx)
                 CellView(rowId = "__perf_totals__", columnId = idea.id, impactPercent = total)
             }
             footerRows += RowView(id = "__perf_totals__", isPinnedFooter = true, cells = cells)
@@ -111,7 +109,7 @@ class ModelBridge(
         // Build totals per idea for Resource
         run {
             val cells = table.ideas.mapIndexed { ideaIdx, idea ->
-                val total = table.totalForType(ideaIdx, RequirementType.Resource)
+                val total = table.totalResource(ideaIdx)
                 CellView(rowId = "__res_totals__", columnId = idea.id, impactPercent = total)
             }
             footerRows += RowView(id = "__res_totals__", isPinnedFooter = true, cells = cells)

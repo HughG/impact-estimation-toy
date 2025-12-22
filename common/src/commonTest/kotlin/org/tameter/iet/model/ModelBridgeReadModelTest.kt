@@ -19,10 +19,10 @@ class ModelBridgeReadModelTest {
     @Test
     fun read_model_contains_stable_ids_and_pinned_footer_totals_rows() {
         // Given a table with mixed requirement types
-        val perfA = PerformanceRequirement("P1", "P1Name", "ms", current = 100.0, goal = 200.0)
-        val perfB = PerformanceRequirement("P2", "P2Name", "%", current = 20.0, goal = 50.0)
-        val res = ResourceRequirement("R1", "R1Name", "$", budget = 100.0)
-        val idea = DesignIdea("D1", name = "Idea 1")
+        val perfA = PerformanceRequirement("P1", "ms", current = 100.0, goal = 200.0)
+        val perfB = PerformanceRequirement("P2", "%", current = 20.0, goal = 50.0)
+        val res = ResourceRequirement("R1", "$", budget = 100.0)
+        val idea = DesignIdea("D1")
         val table = ImpactEstimationTable(requirements = listOf(perfA, perfB, res), ideas = listOf(idea))
         val bridge = ModelBridge(table)
 

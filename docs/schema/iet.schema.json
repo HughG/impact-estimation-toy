@@ -47,33 +47,29 @@
       "additionalProperties": false,
       "properties": {
         "id": { "$ref": "#/$defs/NonEmptyString", "description": "Stable identifier for the requirement (e.g., 'Perf-ResponseTime')." },
-        "name": { "$ref": "#/$defs/NonEmptyString", "description": "Human-readable name." },
         "current": { "type": "number", "description": "Current measured value on the unit's scale." },
         "goal": { "type": "number", "description": "Target (goal) value on the unit's scale." },
         "unit": { "$ref": "#/$defs/NonEmptyString", "description": "Scale unit label (e.g., 'ms', 'hours')." }
       },
-      "required": ["id", "name", "current", "goal", "unit"]
+      "required": ["id", "current", "goal", "unit"]
     },
     "ResourceRequirement": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
         "id": { "$ref": "#/$defs/NonEmptyString", "description": "Stable identifier for the requirement (e.g., 'Cost-DevHours')." },
-        "name": { "$ref": "#/$defs/NonEmptyString", "description": "Human-readable name." },
         "budget": { "type": "number", "description": "Budget (target maximum) value on the unit's scale." },
         "unit": { "$ref": "#/$defs/NonEmptyString", "description": "Scale unit label (e.g., 'USD', 'hours')." }
       },
-      "required": ["id", "name", "budget", "unit"]
+      "required": ["id", "budget", "unit"]
     },
     "DesignIdea": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "id": { "$ref": "#/$defs/NonEmptyString", "description": "Stable identifier for the design idea (e.g., 'IdeaA')." },
-        "name": { "$ref": "#/$defs/NonEmptyString", "description": "Human-readable name." },
-        "description": { "type": ["string", "null"], "description": "Optional description." }
+        "id": { "$ref": "#/$defs/NonEmptyString", "description": "Stable identifier for the design idea (e.g., 'IdeaA')." }
       },
-      "required": ["id", "name"]
+      "required": ["id"]
     },
     "Cell": {
       "type": "object",

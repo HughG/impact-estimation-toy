@@ -12,7 +12,6 @@ object IetJsonStorage {
         prettyPrint = true
         ignoreUnknownKeys = true
         encodeDefaults = true
-        classDiscriminator = "requirementType"
     }
 
     /** Serialize the user-input state of the table to a JSON string. */

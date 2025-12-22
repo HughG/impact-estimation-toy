@@ -18,10 +18,10 @@ class IetJsonStorageTest {
     @Test
     fun testRoundTripPreservesInputsAndOrder() {
         // Given
-        val r1 = PerformanceRequirement(id = "Perf1", name = "P1", unit = "ms", current = 100.0, goal = 50.0)
-        val r2 = ResourceRequirement(id = "Cost1", name = "C1", unit = "$", budget = 1000.0)
-        val ideaA = DesignIdea(id = "A", name = "Idea A")
-        val ideaB = DesignIdea(id = "B", name = "Idea B")
+        val r1 = PerformanceRequirement(id = "Perf1", unit = "ms", current = 100.0, goal = 50.0)
+        val r2 = ResourceRequirement(id = "Cost1", unit = "$", budget = 1000.0)
+        val ideaA = DesignIdea(id = "A")
+        val ideaB = DesignIdea(id = "B")
 
         val table = ImpactEstimationTable(requirements = listOf(r1, r2), ideas = listOf(ideaA, ideaB))
         table.setEstimation(0, 0, Estimation(estimatedValue = 80.0, confidenceRange = 5.0))
@@ -34,8 +34,6 @@ class IetJsonStorageTest {
 
         // Then: same number and order of requirements and ideas
         assertEquals(listOf("Perf1", "Cost1"), loaded.requirements.map { it.id })
-        assertEquals(listOf("P1", "C1"), loaded.requirements.map { it.name })
-        assertEquals(listOf(RequirementType.Performance, RequirementType.Resource), loaded.requirements.map { it.type })
         assertEquals(listOf("A", "B"), loaded.ideas.map { it.id })
 
         // Then: estimations preserved per (row, col)
@@ -57,9 +55,9 @@ class IetJsonStorageTest {
     fun testJsonRootContainsSchemaFields() {
         val table = ImpactEstimationTable(
             requirements = listOf(
-                PerformanceRequirement("R", name = "RName", unit = "%", current = 0.0, goal = 100.0)
+                PerformanceRequirement("R", unit = "%", current = 0.0, goal = 100.0)
             ),
-            ideas = listOf(DesignIdea("X", name = "X"))
+            ideas = listOf(DesignIdea("X"))
         )
         table.setEstimation(0, 0, Estimation(1.0))
         val json = IetJsonStorage.toJson(table)
@@ -80,8 +78,8 @@ class IetJsonStorageTest {
 
     @Test
     fun testCellConfidenceFieldName() {
-        val r1 = PerformanceRequirement(id = "Perf1", name = "P1", unit = "ms", current = 100.0, goal = 50.0)
-        val ideaA = DesignIdea(id = "A", name = "Idea A")
+        val r1 = PerformanceRequirement(id = "Perf1", unit = "ms", current = 100.0, goal = 50.0)
+        val ideaA = DesignIdea(id = "A")
         val table = ImpactEstimationTable(requirements = listOf(r1), ideas = listOf(ideaA))
         table.setEstimation(0, 0, Estimation(estimatedValue = 80.0, confidenceRange = 5.0))
 

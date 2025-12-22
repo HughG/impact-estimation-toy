@@ -34,12 +34,12 @@ class ImpactEstimationTable(
         return req.computeImpact(est)
     }
 
-    fun totalForType(ideaIndex: Int, type: RequirementType): Double? {
+    private fun totalFor(ideaIndex: Int, predicate: (Requirement) -> Boolean): Double? {
         check(ideaIndex in ideas.indices) { "DesignIdea index out of bounds" }
         var sum = 0.0
         var hasAny = false
         requirements.forEachIndexed { reqIdx, req ->
-            if (req.type == type) {
+            if (predicate(req)) {
                 when (val impact = computeCellImpact(reqIdx, ideaIndex)) {
                     is CellImpact.Valid -> {
                         sum += impact.percent
@@ -55,13 +55,16 @@ class ImpactEstimationTable(
         return if (hasAny) sum else null
     }
 
+    fun totalPerformance(ideaIndex: Int): Double? = totalFor(ideaIndex) { it is PerformanceRequirement }
+    fun totalResource(ideaIndex: Int): Double? = totalFor(ideaIndex) { it is ResourceRequirement }
+
     /**
      * Performance-to-Cost Ratio per DesignIdea: TotalPerformance% / TotalResource%.
      * When TotalResource% is 0 or null, return null (undefined/N/A).
      */
     fun performanceToCostRatio(ideaIndex: Int): Double? {
-        val perf = totalForType(ideaIndex, RequirementType.Performance)
-        val resource = totalForType(ideaIndex, RequirementType.Resource)
+        val perf = totalPerformance(ideaIndex)
+        val resource = totalResource(ideaIndex)
         if (perf == null || resource == null) return null
         if (resource == 0.0) return null
         return perf / resource

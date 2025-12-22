@@ -39,7 +39,7 @@ class ModelBridgeOperationsTest {
                 val e = bridge.events.first()
                 ch.trySend(e)
             }
-            val newReq = PerformanceRequirement("NewPerf", "NewPerfName", "ms", current = 0.0, goal = 100.0)
+            val newReq = PerformanceRequirement("NewPerf", "ms", current = 0.0, goal = 100.0)
             bridge.addRow(newReq)
             advanceUntilIdle()
 
@@ -64,7 +64,7 @@ class ModelBridgeOperationsTest {
                 val e = bridge.events.first()
                 ch.trySend(e)
             }
-            val newIdea = DesignIdea("NewIdea", name = "Idea X")
+            val newIdea = DesignIdea("NewIdea")
             bridge.addColumn(newIdea)
             advanceUntilIdle()
 
@@ -80,8 +80,8 @@ class ModelBridgeOperationsTest {
     @Test
     fun row_reorder_emits_event_and_updates_read_model_order() {
         // Given a table with two rows
-        val r1 = PerformanceRequirement("R1", "R1Name", "ms", current = 0.0, goal = 10.0)
-        val r2 = ResourceRequirement("R2", "R2Name", "$", budget = 5.0)
+        val r1 = PerformanceRequirement("R1", "ms", current = 0.0, goal = 10.0)
+        val r2 = ResourceRequirement("R2", "$", budget = 5.0)
         val bridge = ModelBridge(ImpactEstimationTable(requirements = listOf(r1, r2)))
 
         runTest {
@@ -109,8 +109,8 @@ class ModelBridgeOperationsTest {
     @Test
     fun column_reorder_emits_event_and_updates_read_model_order() {
         // Given a table with two columns
-        val c1 = DesignIdea("C1", name = "Idea 1")
-        val c2 = DesignIdea("C2", name = "Idea 2")
+        val c1 = DesignIdea("C1")
+        val c2 = DesignIdea("C2")
         val bridge = ModelBridge(ImpactEstimationTable(ideas = listOf(c1, c2)))
 
         runTest {
@@ -138,7 +138,7 @@ class ModelBridgeOperationsTest {
     @Test
     fun row_remove_emits_event_and_updates_read_model() {
         // Given a table with one row
-        val r1 = PerformanceRequirement("Rmv", "RmvName", "ms", current = 0.0, goal = 10.0)
+        val r1 = PerformanceRequirement("Rmv", "ms", current = 0.0, goal = 10.0)
         val bridge = ModelBridge(ImpactEstimationTable(requirements = listOf(r1)))
 
         runTest {
@@ -163,7 +163,7 @@ class ModelBridgeOperationsTest {
     @Test
     fun column_remove_emits_event_and_updates_read_model() {
         // Given a table with one column
-        val c1 = DesignIdea("Cmv", name = "Idea")
+        val c1 = DesignIdea("Cmv")
         val bridge = ModelBridge(ImpactEstimationTable(ideas = listOf(c1)))
 
         runTest {

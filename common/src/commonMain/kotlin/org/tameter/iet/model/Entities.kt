@@ -11,10 +11,7 @@ import org.tameter.iet.policy.ValidationError
 @Serializable
 sealed class Requirement {
     abstract val id: String
-    abstract val name: String
     abstract val unit: String
-    @Transient
-    abstract val type: RequirementType
 
     /**
      * Compute the impact percentage of an estimation against this requirement.
@@ -36,13 +33,10 @@ sealed class Requirement {
 @SerialName("performance")
 data class PerformanceRequirement(
     override val id: String,
-    override val name: String,
     override val unit: String,
     val current: Double,
     val goal: Double,
 ) : Requirement() {
-    @Transient
-    override val type: RequirementType = RequirementType.Performance
 
     /**
      * Compute the impact percentage of an estimation against a requirement.
@@ -75,12 +69,9 @@ data class PerformanceRequirement(
 @SerialName("resource")
 data class ResourceRequirement(
     override val id: String,
-    override val name: String,
     override val unit: String,
     val budget: Double,
 ) : Requirement() {
-    @Transient
-    override val type: RequirementType = RequirementType.Resource
 
     /**
      * Compute the impact percentage of an estimation against a requirement.
@@ -114,8 +105,6 @@ data class ResourceRequirement(
 @Serializable
 data class DesignIdea(
     val id: String,
-    val name: String,
-    val description: String? = null,
 )
 
 /**

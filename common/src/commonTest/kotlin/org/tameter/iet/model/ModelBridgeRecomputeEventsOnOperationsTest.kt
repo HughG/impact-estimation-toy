@@ -39,7 +39,7 @@ class ModelBridgeRecomputeEventsOnOperationsTest {
                 .take(2)
                 .collect { e -> ch.trySend(e) }
         }
-        bridge.addRow(PerformanceRequirement("P_new", "P_newName", "ms", 0.0, 1.0))
+        bridge.addRow(PerformanceRequirement("P_new", "ms", 0.0, 1.0))
         advanceUntilIdle()
 
         // Then: first is RowAdded, second should be RecomputeComplete
@@ -53,7 +53,7 @@ class ModelBridgeRecomputeEventsOnOperationsTest {
     @Test
     fun recompute_emitted_after_column_remove() = runTest {
         // Given a table with one column
-        val c1 = DesignIdea("C1", name = "Idea")
+        val c1 = DesignIdea("C1")
         val bridge = ModelBridge(ImpactEstimationTable(ideas = listOf(c1)))
 
         // When
