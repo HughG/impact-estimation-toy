@@ -54,7 +54,7 @@ Goal: Ensure the model is UI-ready. If pure common model lacks observability, pr
 
 - [x] Use Kotlin `SharedFlow`/`MutableSharedFlow` in common as the mechanism of observability.
 - [x] Define events: row/column added, removed, reordered; cell edited; metadata changed; recompute complete.
-  - Note: Event types are defined and `CellEdited` is emitted on edits; `RecomputeComplete` is emitted after cell edits. Emission after structural operations (add/remove/reorder) is not implemented yet (now covered by new failing tests).
+  - Note: Event types are defined and `CellEdited` is emitted on edits; `RecomputeComplete` is emitted after cell edits. Emission after structural operations (add/remove/reorder) is now implemented.
 - [x] Provide stable identifiers for rows and columns to correlate UI cells.
 - [x] Provide operations to add/remove/reorder rows and columns.
 - [x] Provide operation to modify cell contents.
@@ -64,16 +64,16 @@ Goal: Ensure the model is UI-ready. If pure common model lacks observability, pr
 
 Goal: Persist and load user inputs to/from JSON with a human-readable, stable order and schema reference.
 
-- [ ] Choose JSON library available in common (e.g., kotlinx.serialization JSON).
-- [ ] Define DTOs mirroring domain with explicit order-preserving lists.
-- [ ] Define on-disk schema versioning; embed `$schema`/`schemaVersion` field in root.
-- [ ] Produce compiled-in JSON schema and exportable `.json` schema file under `docs/`.
-- [ ] Implement serialization (save): domain → DTO → JSON; preserve ordering of rows/columns.
-- [ ] Implement deserialization (load): JSON → DTO → domain; validate and normalize.
-- [ ] Implement schema migration hooks for future versions (no-op for v1).
-- [ ] Round-trip tests: domain → JSON → domain equality (ignoring computed outputs).
-- [ ] Files saved to OS default location initially (Desktop? User home "Documents" folder?), with "last output folder"
-remembered between sessions.
+- [x] Choose JSON library available in common (e.g., kotlinx.serialization JSON).
+- [x] Define DTOs mirroring domain with explicit order-preserving lists.
+- [x] Define on-disk schema versioning; embed `$schema`/`schemaVersion` field in root.
+- [x] Produce compiled-in JSON schema and exportable `.json` schema file under `docs/`.
+- [x] Implement serialization (save): domain → DTO → JSON; preserve ordering of rows/columns.
+- [x] Implement deserialization (load): JSON → DTO → domain; validate and normalize.
+- [x] Implement schema migration hooks for future versions (no-op for v1).
+- [x] Round-trip tests: domain → JSON → domain equality (ignoring computed outputs).
+- [x] Files saved to OS default location initially (Desktop? User home "Documents" folder?), with "last output folder"
+  remembered between sessions.
 
 ## Stage 4 — Desktop UI (Compose)
 
@@ -111,16 +111,18 @@ Goal: Provide consistent user feedback and avoid invalid computations.
 
 ## Stage 7 — Sample Data and Documentation
 
-- [ ] Provide a small example IET JSON file under `docs/examples/`.
-- [ ] Document JSON schema under `docs/schema/iet.schema.json` and reference from plan/README.
+- [x] Provide a small example IET JSON file under `docs/examples/`.
+- [x] Document JSON schema under `docs/schema/iet.schema.json` and reference from plan/README.
 - [ ] Update `docs/requirements.md` cross-links to schema and example.
 - [ ] Add a brief user guide for the desktop UI basics and keyboard shortcuts.
 
 ## Stage 8 — Testing
 
-- [ ] Unit tests for domain computations (cell impact, totals, ratio; edge cases).
-- [ ] Unit tests for validation rules.
-- [ ] Serialization tests (round-trip, ordering stability, schema version tag).
+- [x] Unit tests for domain computations (cell impact, totals, ratio; edge cases).
+- [x] Unit tests for validation rules.
+- [x] Serialization tests (round-trip, ordering stability, schema version tag).
+- [x] JSON Schema validation tests (ensuring sample data matches schema).
+- [x] Model bridge tests (operations, read model, event emission).
 - [ ] UI-layer tests kept minimal; rely on manual verification for layout specifics.
 
 Open Question: Any requirement for golden JSON fixtures for regression? If yes, add canonical fixtures.
@@ -146,12 +148,12 @@ Open Question: Any requirement for golden JSON fixtures for regression? If yes, 
 
 - [x] Stage 0 Foundations
 - [x] Stage 1 Domain Model
-- [ ] Stage 2 Model–UI Bridge
-- [ ] Stage 3 Storage
+- [x] Stage 2 Model–UI Bridge
+- [x] Stage 3 Storage
 - [ ] Stage 4 Desktop UI
 - [ ] Stage 5 Undo/Redo
 - [ ] Stage 6 Validation & Formatting
-- [ ] Stage 7 Samples & Docs
-- [ ] Stage 8 Testing
+- [x] Stage 7 Samples & Docs
+- [x] Stage 8 Testing
 - [ ] Stage 9 Performance
 - [ ] Stage 10 Future (Optional)
