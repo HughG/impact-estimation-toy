@@ -84,6 +84,8 @@ Goal: Implement an editable, scrollable table with fixed headers and pinned tota
 - [x] Pinned rows: group totals (Performance, Resource) and final Performance-to-Cost Ratio row.
 - [x] Row re-ordering: individual Performance and Cost rows can be dragged to re-order.
 - [x] Column re-ordering: columns can be dragged to re-order.
+- [x] Requirement headers show values and units: current/goal for Performance, budget for Resource.
+- [x] Cells show estimated values and confidence ranges, as well as computed totals and ratio.
 - [ ] Auto-sizing: columns/rows size to content; allow manual resize later if needed.
 - [ ] Editing behavior: commit on Enter or focus loss; validation feedback inline.
 - [ ] Navigation: keyboard (arrows, Tab/Shift+Tab, Enter), mouse clicks; selection highlight.

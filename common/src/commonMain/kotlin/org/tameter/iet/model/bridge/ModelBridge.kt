@@ -34,6 +34,9 @@ data class CellView(
     val rowId: String,
     val columnId: String,
     val impactPercent: Double?, // null if invalid or not computed
+    val estimatedValue: Double? = null,
+    val confidenceRange: Double? = null,
+    val confidencePlusMinusPct: Double? = null,
 )
 
 enum class RowType {
@@ -47,6 +50,18 @@ data class RowView(
     val type: RowType,
     val isPinnedFooter: Boolean,
     val cells: List<CellView>,
+    val unit: String = "",
+    val performanceDetails: PerformanceDetails? = null,
+    val resourceDetails: ResourceDetails? = null,
+)
+
+data class PerformanceDetails(
+    val current: Double,
+    val goal: Double,
+)
+
+data class ResourceDetails(
+    val budget: Double,
 )
 
 data class TableReadModel(
@@ -93,18 +108,40 @@ class ModelBridge(
         val normalRows = table.requirements.mapIndexed { reqIdx, req ->
             val cells = table.ideas.mapIndexed { ideaIdx, idea ->
                 val impact = table.computeCellImpact(reqIdx, ideaIdx)
-                val percent = when (impact) {
-                    is CellImpact.Valid -> impact.percent
-                    is CellImpact.Invalid -> null
-                    null -> null
+                val (percent, confPct) = when (impact) {
+                    is CellImpact.Valid -> impact.percent to impact.confidencePlusMinus
+                    is CellImpact.Invalid -> null to null
+                    null -> null to null
                 }
-                CellView(rowId = req.id, columnId = idea.id, impactPercent = percent)
+                val est = table.getEstimation(reqIdx, ideaIdx)
+                CellView(
+                    rowId = req.id,
+                    columnId = idea.id,
+                    impactPercent = percent,
+                    estimatedValue = est?.estimatedValue,
+                    confidenceRange = est?.confidenceRange,
+                    confidencePlusMinusPct = confPct
+                )
             }
             val type = when (req) {
                 is org.tameter.iet.model.PerformanceRequirement -> RowType.Performance
                 is org.tameter.iet.model.ResourceRequirement -> RowType.Resource
             }
-            RowView(id = req.id, type = type, isPinnedFooter = false, cells = cells)
+            val perfDetails = (req as? org.tameter.iet.model.PerformanceRequirement)?.let {
+                PerformanceDetails(current = it.current, goal = it.goal)
+            }
+            val resDetails = (req as? org.tameter.iet.model.ResourceRequirement)?.let {
+                ResourceDetails(budget = it.budget)
+            }
+            RowView(
+                id = req.id,
+                type = type,
+                isPinnedFooter = false,
+                cells = cells,
+                unit = req.unit,
+                performanceDetails = perfDetails,
+                resourceDetails = resDetails
+            )
         }
 
         // Pinned footer rows: at least two (Performance Totals and Resource Totals)

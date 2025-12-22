@@ -247,7 +247,7 @@ private fun DataRow(
         Surface(
             modifier = Modifier
                 .width(200.dp)
-                .height(40.dp)
+                .height(60.dp)
                 .zIndex(if (isDragging) 1f else 0f)
                 .graphicsLayer {
                     translationY = offsetY
@@ -267,7 +267,7 @@ private fun DataRow(
                                 },
                                 onDragEnd = {
                                     isDragging = false
-                                    val threshold = 40f // row height
+                                    val threshold = 60f // row height
                                     val numMoved = (offsetY / threshold).roundToInt()
                                     
                                     if (numMoved != 0) {
@@ -299,11 +299,31 @@ private fun DataRow(
             },
             border = BorderStroke(0.5.dp, Color.LightGray)
         ) {
-            Box(modifier = Modifier.padding(horizontal = 8.dp), contentAlignment = Alignment.CenterStart) {
+            Column(modifier = Modifier.padding(horizontal = 8.dp), verticalArrangement = Arrangement.Center) {
                 Text(
                     text = formatRowName(row.id),
-                    fontWeight = if (isTotal) FontWeight.Bold else FontWeight.Normal
+                    fontWeight = if (isTotal) FontWeight.Bold else FontWeight.Normal,
+                    maxLines = 1
                 )
+                if (!isTotal && !isPinned) {
+                    val detailText = when {
+                        row.performanceDetails != null -> {
+                            "${row.performanceDetails.current} -> ${row.performanceDetails.goal} ${row.unit}"
+                        }
+                        row.resourceDetails != null -> {
+                            "<= ${row.resourceDetails.budget} ${row.unit}"
+                        }
+                        else -> ""
+                    }
+                    if (detailText.isNotEmpty()) {
+                        Text(
+                            text = detailText,
+                            style = MaterialTheme.typography.caption,
+                            color = Color.Gray,
+                            maxLines = 1
+                        )
+                    }
+                }
             }
         }
         
@@ -312,18 +332,37 @@ private fun DataRow(
             Row {
                 row.cells.forEach { cell ->
                     Surface(
-                        modifier = Modifier.width(120.dp).height(40.dp),
+                        modifier = Modifier.width(120.dp).height(60.dp),
                         border = BorderStroke(0.5.dp, Color.LightGray),
                         color = if (isTotal && !isPinned) MaterialTheme.colors.secondary.copy(alpha = 0.05f) else Color.Transparent
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            val text = cell.impactPercent?.let { 
+                        Column(
+                            modifier = Modifier.fillMaxSize(),
+                            verticalArrangement = Arrangement.Center,
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            val impactText = cell.impactPercent?.let { 
                                 NumberPolicy.formatPercentage(it)
                             } ?: "N/A"
+                            val confidencePlusMinusPctText =
+                                cell.confidencePlusMinusPct?.let { NumberPolicy.formatPercentage(it) } ?: "?"
                             Text(
-                                text = text,
+                                text = "${impactText} ±${confidencePlusMinusPctText}",
+                                fontWeight = if (isTotal) FontWeight.Bold else FontWeight.Normal,
                                 color = if (cell.impactPercent == null && !isTotal) Color.Red else Color.Unspecified
                             )
+                            if (!isTotal && !isPinned && cell.estimatedValue != null) {
+                                val estText = if (cell.confidenceRange != null) {
+                                    "${cell.estimatedValue} ±${cell.confidenceRange}"
+                                } else {
+                                    "${cell.estimatedValue} ±?"
+                                }
+                                Text(
+                                    text = estText,
+                                    style = MaterialTheme.typography.caption,
+                                    color = Color.Gray
+                                )
+                            }
                         }
                     }
                 }

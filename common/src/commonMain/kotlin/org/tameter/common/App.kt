@@ -38,17 +38,17 @@ fun App() {
 
             // Populate some dummy estimations
             // Row 0, Col 0: Perf 1, Idea A. Current=50, Goal=100. Let's say Idea A gives 75.
-            setEstimation(0, 0, Estimation(75.0))
+            setEstimation(0, 0, Estimation(75.0, confidenceRange = 5.0))
             // Row 3, Col 0: Res 1, Idea A. Budget=10000. Let's say Idea A costs 2000.
-            setEstimation(3, 0, Estimation(2000.0))
+            setEstimation(3, 0, Estimation(2000.0, confidenceRange = 500.0))
             
             // Row 0, Col 1: Perf 1, Idea B. Let's say Idea B gives 100.
             setEstimation(0, 1, Estimation(100.0))
             // Row 3, Col 1: Res 1, Idea B. Let's say Idea B costs 5000.
-            setEstimation(3, 1, Estimation(5000.0))
+            setEstimation(3, 1, Estimation(5000.0, confidenceRange = 1000.0))
 
             // Row 1, Col 2: Perf 2, Idea C. Current=200, Goal=100. Let's say Idea C gives 150.
-            setEstimation(1, 2, Estimation(150.0))
+            setEstimation(1, 2, Estimation(150.0, confidenceRange = 10.0))
             // Row 4, Col 2: Res 2, Idea C. Budget=500. Let's say Idea C costs 100.
             setEstimation(4, 2, Estimation(100.0))
         }
