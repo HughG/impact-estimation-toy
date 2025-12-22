@@ -18,11 +18,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import org.tameter.iet.model.bridge.ModelBridge
+import org.tameter.iet.model.bridge.RowType
 import org.tameter.iet.model.bridge.TableReadModel
 import org.tameter.iet.policy.NumberPolicy
 
 @Composable
-fun IetTable(modelBridge: ModelBridge) {
+fun IetTable(modelBridge: ModelBridge, inlineTotals: Boolean = false) {
     val readModel by modelBridge.readModel.collectAsState()
 
     Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
@@ -36,18 +37,56 @@ fun IetTable(modelBridge: ModelBridge) {
                 // Data Rows
                 Box(modifier = Modifier.weight(1f)) {
                     LazyColumn {
-                        items(readModel.rows.filter { !it.isPinnedFooter }) { row ->
+                        val performanceRows = readModel.rows.filter { it.type == RowType.Performance }
+                        val resourceRows = readModel.rows.filter { it.type == RowType.Resource }
+                        val footerRows = readModel.rows.filter { it.isPinnedFooter }
+                        
+                        // Performance Group
+                        items(performanceRows) { row ->
                             DataRow(row, horizontalScrollState)
                             Divider()
+                        }
+                        
+                        if (inlineTotals) {
+                            val perfTotal = footerRows.find { it.id == "__perf_totals__" }
+                            perfTotal?.let {
+                                item {
+                                    DataRow(it, horizontalScrollState, isTotal = true)
+                                    Divider(thickness = 2.dp)
+                                }
+                            }
+                        }
+
+                        // Resource Group
+                        items(resourceRows) { row ->
+                            DataRow(row, horizontalScrollState)
+                            Divider()
+                        }
+                        
+                        if (inlineTotals) {
+                            val resTotal = footerRows.find { it.id == "__res_totals__" }
+                            resTotal?.let {
+                                item {
+                                    DataRow(it, horizontalScrollState, isTotal = true)
+                                    Divider(thickness = 2.dp)
+                                }
+                            }
                         }
                     }
                 }
 
-                // Footer Rows
+                // Pinned Footer Rows
                 Column {
-                    readModel.rows.filter { it.isPinnedFooter }.forEach { row ->
+                    val footerRows = readModel.rows.filter { it.isPinnedFooter }
+                    val pinnedToShow = if (inlineTotals) {
+                        footerRows.filter { it.id == "__ratio__" }
+                    } else {
+                        footerRows
+                    }
+                    
+                    pinnedToShow.forEach { row ->
                         Divider(thickness = 2.dp)
-                        DataRow(row, horizontalScrollState, isFooter = true)
+                        DataRow(row, horizontalScrollState, isTotal = true, isPinned = true)
                     }
                 }
             }
@@ -86,18 +125,27 @@ private fun HeaderRow(readModel: TableReadModel, scrollState: ScrollState) {
 }
 
 @Composable
-private fun DataRow(row: org.tameter.iet.model.bridge.RowView, scrollState: ScrollState, isFooter: Boolean = false) {
+private fun DataRow(
+    row: org.tameter.iet.model.bridge.RowView,
+    scrollState: ScrollState,
+    isTotal: Boolean = false,
+    isPinned: Boolean = false
+) {
     Row(modifier = Modifier.fillMaxWidth()) {
         // Row Header (Requirement Name/ID)
         Surface(
             modifier = Modifier.width(200.dp).height(40.dp),
-            color = if (isFooter) MaterialTheme.colors.secondaryVariant else MaterialTheme.colors.surface,
+            color = if (isTotal) {
+                if (isPinned) MaterialTheme.colors.secondaryVariant else MaterialTheme.colors.secondary.copy(alpha = 0.1f)
+            } else {
+                MaterialTheme.colors.surface
+            },
             border = BorderStroke(0.5.dp, Color.LightGray)
         ) {
             Box(modifier = Modifier.padding(horizontal = 8.dp), contentAlignment = Alignment.CenterStart) {
                 Text(
                     text = formatRowName(row.id),
-                    fontWeight = if (isFooter) FontWeight.Bold else FontWeight.Normal
+                    fontWeight = if (isTotal) FontWeight.Bold else FontWeight.Normal
                 )
             }
         }
@@ -107,7 +155,8 @@ private fun DataRow(row: org.tameter.iet.model.bridge.RowView, scrollState: Scro
             row.cells.forEach { cell ->
                 Surface(
                     modifier = Modifier.width(120.dp).height(40.dp),
-                    border = BorderStroke(0.5.dp, Color.LightGray)
+                    border = BorderStroke(0.5.dp, Color.LightGray),
+                    color = if (isTotal && !isPinned) MaterialTheme.colors.secondary.copy(alpha = 0.05f) else Color.Transparent
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         val text = cell.impactPercent?.let { 
@@ -115,7 +164,7 @@ private fun DataRow(row: org.tameter.iet.model.bridge.RowView, scrollState: Scro
                         } ?: "N/A"
                         Text(
                             text = text,
-                            color = if (cell.impactPercent == null && !isFooter) Color.Red else Color.Unspecified
+                            color = if (cell.impactPercent == null && !isTotal) Color.Red else Color.Unspecified
                         )
                     }
                 }

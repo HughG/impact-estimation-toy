@@ -36,8 +36,15 @@ data class CellView(
     val impactPercent: Double?, // null if invalid or not computed
 )
 
+enum class RowType {
+    Performance,
+    Resource,
+    Total,
+}
+
 data class RowView(
     val id: String,
+    val type: RowType,
     val isPinnedFooter: Boolean,
     val cells: List<CellView>,
 )
@@ -93,7 +100,11 @@ class ModelBridge(
                 }
                 CellView(rowId = req.id, columnId = idea.id, impactPercent = percent)
             }
-            RowView(id = req.id, isPinnedFooter = false, cells = cells)
+            val type = when (req) {
+                is org.tameter.iet.model.PerformanceRequirement -> RowType.Performance
+                is org.tameter.iet.model.ResourceRequirement -> RowType.Resource
+            }
+            RowView(id = req.id, type = type, isPinnedFooter = false, cells = cells)
         }
 
         // Pinned footer rows: at least two (Performance Totals and Resource Totals)
@@ -104,7 +115,7 @@ class ModelBridge(
                 val total = table.totalPerformance(ideaIdx)
                 CellView(rowId = "__perf_totals__", columnId = idea.id, impactPercent = total)
             }
-            footerRows += RowView(id = "__perf_totals__", isPinnedFooter = true, cells = cells)
+            footerRows += RowView(id = "__perf_totals__", type = RowType.Total, isPinnedFooter = true, cells = cells)
         }
         // Build totals per idea for Resource
         run {
@@ -112,7 +123,7 @@ class ModelBridge(
                 val total = table.totalResource(ideaIdx)
                 CellView(rowId = "__res_totals__", columnId = idea.id, impactPercent = total)
             }
-            footerRows += RowView(id = "__res_totals__", isPinnedFooter = true, cells = cells)
+            footerRows += RowView(id = "__res_totals__", type = RowType.Total, isPinnedFooter = true, cells = cells)
         }
 
         // Optional: Ratio row (doesn't affect current tests but useful)
@@ -121,7 +132,7 @@ class ModelBridge(
                 val ratio = table.performanceToCostRatio(ideaIdx)
                 CellView(rowId = "__ratio__", columnId = idea.id, impactPercent = ratio)
             }
-            footerRows += RowView(id = "__ratio__", isPinnedFooter = true, cells = cells)
+            footerRows += RowView(id = "__ratio__", type = RowType.Total, isPinnedFooter = true, cells = cells)
         }
 
         return TableReadModel(columns = columns, rows = normalRows + footerRows)
