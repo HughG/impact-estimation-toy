@@ -1,20 +1,20 @@
 package org.tameter.iet.ui
 
 import androidx.compose.foundation.*
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.Divider
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Surface
 import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -34,7 +34,7 @@ fun IetTable(modelBridge: ModelBridge, inlineTotals: Boolean = false) {
 
     Column(modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.padding(16.dp)) {
-            HeaderRow(readModel, horizontalScrollState)
+            HeaderRow(readModel, horizontalScrollState, modelBridge)
         }
 
         Box(modifier = Modifier.weight(1f).padding(horizontal = 16.dp)) {
@@ -50,8 +50,8 @@ fun IetTable(modelBridge: ModelBridge, inlineTotals: Boolean = false) {
                         Row(modifier = Modifier.fillMaxSize()) {
                             Box(modifier = Modifier.weight(1f)) {
                                 LazyColumn(state = perfScrollState, modifier = Modifier.fillMaxSize()) {
-                                    items(performanceRows) { row ->
-                                        DataRow(row, horizontalScrollState)
+                                    itemsIndexed(performanceRows) { index, row ->
+                                        DataRow(row, horizontalScrollState, modelBridge = modelBridge)
                                         Divider()
                                     }
                                 }
@@ -66,7 +66,7 @@ fun IetTable(modelBridge: ModelBridge, inlineTotals: Boolean = false) {
                     // Performance Total (Fixed between groups)
                     val perfTotal = footerRows.find { it.id == "__perf_totals__" }
                     perfTotal?.let {
-                        DataRow(it, horizontalScrollState, isTotal = true)
+                        DataRow(it, horizontalScrollState, isTotal = true, modelBridge = modelBridge)
                         Divider(thickness = 2.dp)
                     }
 
@@ -76,8 +76,8 @@ fun IetTable(modelBridge: ModelBridge, inlineTotals: Boolean = false) {
                         Row(modifier = Modifier.fillMaxSize()) {
                             Box(modifier = Modifier.weight(1f)) {
                                 LazyColumn(state = resScrollState, modifier = Modifier.fillMaxSize()) {
-                                    items(resourceRows) { row ->
-                                        DataRow(row, horizontalScrollState)
+                                    itemsIndexed(resourceRows) { index, row ->
+                                        DataRow(row, horizontalScrollState, modelBridge = modelBridge)
                                         Divider()
                                     }
                                 }
@@ -92,7 +92,7 @@ fun IetTable(modelBridge: ModelBridge, inlineTotals: Boolean = false) {
                     // Resource Total (Fixed after Resource group)
                     val resTotal = footerRows.find { it.id == "__res_totals__" }
                     resTotal?.let {
-                        DataRow(it, horizontalScrollState, isTotal = true)
+                        DataRow(it, horizontalScrollState, isTotal = true, modelBridge = modelBridge)
                         Divider(thickness = 2.dp)
                     }
                 }
@@ -102,12 +102,12 @@ fun IetTable(modelBridge: ModelBridge, inlineTotals: Boolean = false) {
                     Row(modifier = Modifier.fillMaxSize()) {
                         Box(modifier = Modifier.weight(1f)) {
                             LazyColumn(state = mainScrollState, modifier = Modifier.fillMaxSize()) {
-                                items(performanceRows) { row ->
-                                    DataRow(row, horizontalScrollState)
+                                itemsIndexed(performanceRows) { index, row ->
+                                    DataRow(row, horizontalScrollState, modelBridge = modelBridge)
                                     Divider()
                                 }
-                                items(resourceRows) { row ->
-                                    DataRow(row, horizontalScrollState)
+                                itemsIndexed(resourceRows) { index, row ->
+                                    DataRow(row, horizontalScrollState, modelBridge = modelBridge)
                                     Divider()
                                 }
                             }
@@ -133,7 +133,7 @@ fun IetTable(modelBridge: ModelBridge, inlineTotals: Boolean = false) {
 
                 pinnedToShow.forEach { row ->
                     Divider(thickness = 2.dp)
-                    DataRow(row, horizontalScrollState, isTotal = true, isPinned = true)
+                    DataRow(row, horizontalScrollState, isTotal = true, isPinned = true, modelBridge = modelBridge)
                 }
                 
                 Row {
@@ -154,7 +154,11 @@ fun IetTable(modelBridge: ModelBridge, inlineTotals: Boolean = false) {
 }
 
 @Composable
-private fun HeaderRow(readModel: TableReadModel, scrollState: ScrollState) {
+private fun HeaderRow(
+    readModel: TableReadModel,
+    scrollState: ScrollState,
+    modelBridge: ModelBridge
+) {
     Row(modifier = Modifier.fillMaxWidth()) {
         // Fixed corner
         Surface(
@@ -169,9 +173,29 @@ private fun HeaderRow(readModel: TableReadModel, scrollState: ScrollState) {
         // Scrollable headers
         Box(modifier = Modifier.weight(1f).horizontalScroll(scrollState)) {
             Row {
-                readModel.columns.forEach { column ->
+                readModel.columns.forEachIndexed { index, column ->
+                    var offsetX by remember { mutableStateOf(0f) }
                     Surface(
-                        modifier = Modifier.width(120.dp).height(40.dp),
+                        modifier = Modifier
+                            .width(120.dp)
+                            .height(40.dp)
+                            .pointerInput(column.id) {
+                                detectDragGestures(
+                                    onDragStart = { offsetX = 0f },
+                                    onDrag = { change, dragAmount ->
+                                        change.consume()
+                                        offsetX += dragAmount.x
+                                        val threshold = 120f // column width
+                                        if (offsetX > threshold && index < readModel.columns.size - 1) {
+                                            modelBridge.reorderColumns(index, index + 1)
+                                            offsetX -= threshold
+                                        } else if (offsetX < -threshold && index > 0) {
+                                            modelBridge.reorderColumns(index, index - 1)
+                                            offsetX += threshold
+                                        }
+                                    }
+                                )
+                            },
                         border = BorderStroke(0.5.dp, Color.LightGray),
                         color = MaterialTheme.colors.primary
                     ) {
@@ -192,12 +216,44 @@ private fun DataRow(
     row: org.tameter.iet.model.bridge.RowView,
     scrollState: ScrollState,
     isTotal: Boolean = false,
-    isPinned: Boolean = false
+    isPinned: Boolean = false,
+    modelBridge: ModelBridge
 ) {
     Row(modifier = Modifier.fillMaxWidth()) {
         // Row Header (Requirement Name/ID)
+        var offsetY by remember { mutableStateOf(0f) }
         Surface(
-            modifier = Modifier.width(200.dp).height(40.dp),
+            modifier = Modifier
+                .width(200.dp)
+                .height(40.dp)
+                .then(
+                    if (!isTotal && !isPinned) {
+                        Modifier.pointerInput(row.id) {
+                            detectDragGestures(
+                                onDragStart = { offsetY = 0f },
+                                onDrag = { change, dragAmount ->
+                                    change.consume()
+                                    offsetY += dragAmount.y
+                                    val threshold = 40f // row height
+                                    
+                                    val allRows = modelBridge.readModel.value.rows
+                                    val normalRows = allRows.filter { !it.isPinnedFooter }
+                                    val currentIndexInNormal = normalRows.indexOfFirst { it.id == row.id }
+                                    
+                                    if (currentIndexInNormal != -1) {
+                                        if (offsetY > threshold && currentIndexInNormal < normalRows.size - 1) {
+                                            modelBridge.reorderRows(currentIndexInNormal, currentIndexInNormal + 1)
+                                            offsetY -= threshold
+                                        } else if (offsetY < -threshold && currentIndexInNormal > 0) {
+                                            modelBridge.reorderRows(currentIndexInNormal, currentIndexInNormal - 1)
+                                            offsetY += threshold
+                                        }
+                                    }
+                                }
+                            )
+                        }
+                    } else Modifier
+                ),
             color = if (isTotal) {
                 if (isPinned) MaterialTheme.colors.secondaryVariant else MaterialTheme.colors.secondary.copy(alpha = 0.1f)
             } else {

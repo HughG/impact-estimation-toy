@@ -79,11 +79,11 @@ Goal: Persist and load user inputs to/from JSON with a human-readable, stable or
 
 Goal: Implement an editable, scrollable table with fixed headers and pinned totals and ratio rows.
 
-- [ ] App shell and window with menu or toolbar for File (New, Open, Save, Save As), Edit (Undo/Redo), and Help.
-- [ ] Layout: scrollable table with separate panes for fixed row headers and column headers.
-- [ ] Pinned rows: group totals (Performance, Resource) and final Performance-to-Cost Ratio row.
-- [ ] Row re-ordering: individual Performance and Cost rows can be dragged to re-order.
-- [ ] Column re-ordering: columns can be dragged to re-order.
+- [x] App shell and window with menu or toolbar for File (New, Open, Save, Save As), Edit (Undo/Redo), and Help.
+- [x] Layout: scrollable table with separate panes for fixed row headers and column headers.
+- [x] Pinned rows: group totals (Performance, Resource) and final Performance-to-Cost Ratio row.
+- [?] Row re-ordering: individual Performance and Cost rows can be dragged to re-order.
+- [?] Column re-ordering: columns can be dragged to re-order.
 - [ ] Auto-sizing: columns/rows size to content; allow manual resize later if needed.
 - [ ] Editing behavior: commit on Enter or focus loss; validation feedback inline.
 - [ ] Navigation: keyboard (arrows, Tab/Shift+Tab, Enter), mouse clicks; selection highlight.
