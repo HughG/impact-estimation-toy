@@ -184,4 +184,57 @@ class ModelBridgeOperationsTest {
             assertTrue(rm.columns.none { it.id == "Cmv" }, "Removed column should not be present in read model")
         }
     }
+    @Test
+    fun column_reorder_preserves_estimations() {
+        // Given a table with two columns and one estimation
+        val c1 = DesignIdea("C1")
+        val c2 = DesignIdea("C2")
+        val r1 = PerformanceRequirement("R1", "ms", 0.0, 10.0)
+        val table = ImpactEstimationTable(requirements = listOf(r1), ideas = listOf(c1, c2))
+        table.setEstimation(0, 0, Estimation(5.0)) // R1, C1
+        val bridge = ModelBridge(table)
+
+        runTest {
+            // When reordering columns (C1, C2) -> (C2, C1)
+            bridge.reorderColumns(0, 1)
+            advanceUntilIdle()
+
+            // Then R1, C1 estimation should still be 5.0 (now at index 1)
+            val rm = bridge.readModel.value
+            assertEquals(2, rm.columns.size)
+            assertEquals("C2", rm.columns[0].id)
+            assertEquals("C1", rm.columns[1].id)
+
+            // Cell at (R1, C1) should have impact for 5.0 (50%)
+            val rowR1 = rm.rows.find { it.id == "R1" }!!
+            // C2 is at index 0, C1 is at index 1
+            assertEquals(null, rowR1.cells[0].impactPercent, "C2 should have no estimation")
+            assertEquals(50.0, rowR1.cells[1].impactPercent, "C1 should still have its estimation")
+        }
+    }
+
+    @Test
+    fun row_reorder_preserves_estimations() {
+        // Given a table with two rows and one estimation
+        val r1 = PerformanceRequirement("R1", "ms", 0.0, 10.0)
+        val r2 = PerformanceRequirement("R2", "ms", 0.0, 10.0)
+        val c1 = DesignIdea("C1")
+        val table = ImpactEstimationTable(requirements = listOf(r1, r2), ideas = listOf(c1))
+        table.setEstimation(0, 0, Estimation(5.0)) // R1, C1
+        val bridge = ModelBridge(table)
+
+        runTest {
+            // When reordering rows (R1, R2) -> (R2, R1)
+            bridge.reorderRows(0, 1)
+            advanceUntilIdle()
+
+            // Then R1, C1 estimation should still be 5.0 (now at index 1)
+            val rm = bridge.readModel.value
+            val r2View = rm.rows.find { it.id == "R2" }!!
+            val r1View = rm.rows.find { it.id == "R1" }!!
+
+            assertEquals(null, r2View.cells[0].impactPercent, "R2 should have no estimation")
+            assertEquals(50.0, r1View.cells[0].impactPercent, "R1 should still have its estimation")
+        }
+    }
 }
