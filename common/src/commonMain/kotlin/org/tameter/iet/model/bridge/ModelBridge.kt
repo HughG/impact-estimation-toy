@@ -267,4 +267,17 @@ class ModelBridge(
         _events.tryEmit(ModelEvent.ColumnReordered(fromIndex, toIndex))
         _events.tryEmit(ModelEvent.RecomputeComplete)
     }
+
+    fun updateModel(newTable: ImpactEstimationTable) {
+        table.requirements.clear()
+        table.requirements.addAll(newTable.requirements)
+        table.ideas.clear()
+        table.ideas.addAll(newTable.ideas)
+        
+        table.cells.clear()
+        table.cells.putAll(newTable.cells)
+        
+        _readModel.value = buildReadModel()
+        _events.tryEmit(ModelEvent.MetadataChanged("model_reset"))
+    }
 }

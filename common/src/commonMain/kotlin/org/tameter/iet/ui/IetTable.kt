@@ -33,6 +33,9 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -53,9 +56,19 @@ import kotlin.math.roundToInt
 
 private const val ROW_HEADER_KEY = "__row_header__"
 
+private fun measureTextWidthPx(textMeasurer: androidx.compose.ui.text.TextMeasurer, text: String, style: TextStyle): Int {
+    if (text.isEmpty()) return 0
+    return textMeasurer.measure(AnnotatedString(text), style).size.width
+}
+
 private class TableDimensionState {
     val columnWidths = mutableStateMapOf<String, Dp>()
     val rowHeights = mutableStateMapOf<String, Dp>()
+
+    fun reset() {
+        columnWidths.clear()
+        rowHeights.clear()
+    }
 
     fun updateColumnWidth(key: String, width: Dp) {
         val current = columnWidths[key] ?: 0.dp
@@ -76,6 +89,14 @@ private class TableDimensionState {
 fun IetTable(modelBridge: ModelBridge, inlineTotals: Boolean = false) {
     val readModel by modelBridge.readModel.collectAsState()
     val tableDimensionState = remember { TableDimensionState() }
+    
+    // Reset dimension state when model is reset or significantly changed
+    LaunchedEffect(readModel) {
+        if (readModel.columns.isEmpty() && readModel.rows.isEmpty()) {
+            tableDimensionState.reset()
+        }
+    }
+    
     val density = LocalDensity.current
 
     val horizontalScrollState = rememberScrollState()
@@ -210,13 +231,15 @@ private fun HeaderRow(
     tableDimensionState: TableDimensionState
 ) {
     val density = LocalDensity.current
+    val textMeasurer = rememberTextMeasurer()
+    val headerTextStyle = MaterialTheme.typography.body1.copy(fontWeight = FontWeight.Bold)
+    val headerFieldPaddingPx = with(density) { 12.dp.toPx() }.roundToInt()
     Row(modifier = Modifier.fillMaxWidth()) {
         // Fixed corner
         val rowHeaderWidth = tableDimensionState.columnWidths[ROW_HEADER_KEY] ?: 200.dp
         Surface(
             modifier = Modifier
-                .width(IntrinsicSize.Max)
-                .widthIn(min = 200.dp.coerceAtLeast(rowHeaderWidth))
+                .width(rowHeaderWidth.coerceAtLeast(200.dp))
                 .height(40.dp)
                 .onSizeChanged { size ->
                     tableDimensionState.updateColumnWidth(ROW_HEADER_KEY, with(density) { size.width.toDp() })
@@ -238,11 +261,14 @@ private fun HeaderRow(
                     var offsetX by remember(column.id) { mutableStateOf(0f) }
                     var isDragging by remember(column.id) { mutableStateOf(false) }
                     val columnWidth = tableDimensionState.columnWidths[column.id] ?: 120.dp
+                    val headerLabel = column.id.ifEmpty { "Idea name" }
+                    val headerTextWidthPx = measureTextWidthPx(textMeasurer, headerLabel, headerTextStyle)
+                    val headerMinWidthPx = headerTextWidthPx + headerFieldPaddingPx
+                    tableDimensionState.updateColumnWidth(column.id, with(density) { headerMinWidthPx.toDp() })
 
                     Surface(
                         modifier = Modifier
-                            .width(IntrinsicSize.Max)
-                            .widthIn(min = 120.dp.coerceAtLeast(columnWidth))
+                            .width(columnWidth.coerceAtLeast(120.dp))
                             .height(40.dp)
                             .zIndex(if (isDragging) 1f else 0f)
                             .graphicsLayer {
@@ -382,8 +408,8 @@ private fun EditableField(
         } else {
             MaterialTheme.typography.body1.copy(
                 color = if (textColor != Color.Unspecified) textColor else if (isFocused) MaterialTheme.colors.primary else Color.Unspecified,
-                textAlign = TextAlign.Center,
-                fontWeight = if (textColor != Color.Unspecified || isFocused) FontWeight.Bold else FontWeight.Normal
+                textAlign = TextAlign.Center/*,
+                fontWeight = if (textColor != Color.Unspecified || isFocused) FontWeight.Bold else FontWeight.Normal*/
             )
         },
         singleLine = true,
@@ -433,7 +459,44 @@ private fun DataRow(
     tableDimensionState: TableDimensionState
 ) {
     val density = LocalDensity.current
+    val textMeasurer = rememberTextMeasurer()
+    val bodyStyle = MaterialTheme.typography.body1
+    val bodyBoldStyle = MaterialTheme.typography.body1.copy(fontWeight = FontWeight.Bold)
+    val captionStyle = MaterialTheme.typography.caption
+    val rowHeaderPaddingPx = with(density) { 16.dp.toPx() }.roundToInt()
+    val cellPaddingPx = with(density) { 8.dp.toPx() }.roundToInt()
+    val fieldPaddingPx = with(density) { 4.dp.toPx() }.roundToInt()
     val rowHeight = tableDimensionState.rowHeights[row.id] ?: 60.dp
+    if (!isTotal && !isPinned) {
+        val nameWidthPx = measureTextWidthPx(textMeasurer, row.id, bodyStyle)
+        val lineWidthPx = when (row.type) {
+            RowType.Performance -> {
+                val currentText = row.performanceDetails?.current?.toString() ?: ""
+                val goalText = row.performanceDetails?.goal?.toString() ?: ""
+                val unitText = row.unit.ifEmpty { "unit" }
+                val currentWidth = measureTextWidthPx(textMeasurer, currentText, captionStyle) + fieldPaddingPx
+                val arrowWidth = measureTextWidthPx(textMeasurer, " -> ", captionStyle)
+                val goalWidth = measureTextWidthPx(textMeasurer, goalText, captionStyle) + fieldPaddingPx
+                val unitWidth = measureTextWidthPx(textMeasurer, unitText, captionStyle) + fieldPaddingPx
+                currentWidth + arrowWidth + goalWidth + unitWidth
+            }
+            RowType.Resource -> {
+                val budgetText = row.resourceDetails?.budget?.toString() ?: ""
+                val unitText = row.unit.ifEmpty { "unit" }
+                val leWidth = measureTextWidthPx(textMeasurer, "<= ", captionStyle)
+                val budgetWidth = measureTextWidthPx(textMeasurer, budgetText, captionStyle) + fieldPaddingPx
+                val unitWidth = measureTextWidthPx(textMeasurer, unitText, captionStyle) + fieldPaddingPx
+                leWidth + budgetWidth + unitWidth
+            }
+            else -> 0
+        }
+        val rowHeaderWidthPx = maxOf(nameWidthPx, lineWidthPx) + rowHeaderPaddingPx
+        tableDimensionState.updateColumnWidth(ROW_HEADER_KEY, with(density) { rowHeaderWidthPx.toDp() })
+    } else {
+        val titleText = formatRowName(row.id)
+        val titleWidthPx = measureTextWidthPx(textMeasurer, titleText, bodyBoldStyle) + rowHeaderPaddingPx
+        tableDimensionState.updateColumnWidth(ROW_HEADER_KEY, with(density) { titleWidthPx.toDp() })
+    }
 
     Row(modifier = Modifier
         .fillMaxWidth()
@@ -450,8 +513,7 @@ private fun DataRow(
         val rowHeaderWidth = tableDimensionState.columnWidths[ROW_HEADER_KEY] ?: 200.dp
         Surface(
             modifier = Modifier
-                .width(IntrinsicSize.Max)
-                .widthIn(min = 200.dp.coerceAtLeast(rowHeaderWidth))
+                .width(rowHeaderWidth.coerceAtLeast(200.dp))
                 .fillMaxHeight()
                 .zIndex(if (isDragging) 1f else 0f)
                 .graphicsLayer {
@@ -632,10 +694,24 @@ private fun DataRow(
             Row {
                 row.cells.forEach { cell ->
                     val columnWidth = tableDimensionState.columnWidths[cell.columnId] ?: 120.dp
+                    val cellWidthPx = if (isTotal || isPinned) {
+                        val impactText = cell.impactPercent?.let { NumberPolicy.formatPercentage(it) } ?: "N/A"
+                        measureTextWidthPx(textMeasurer, impactText, bodyBoldStyle) + cellPaddingPx
+                    } else {
+                        val valueText = cell.estimatedValue?.toString().orEmpty().ifEmpty { "val" }
+                        val confText = cell.confidenceRange?.toString().orEmpty().ifEmpty { "conf" }
+                        val valueWidth = measureTextWidthPx(textMeasurer, valueText, bodyStyle) + fieldPaddingPx
+                        val plusMinusWidth = measureTextWidthPx(textMeasurer, "±", captionStyle)
+                        val confWidth = measureTextWidthPx(textMeasurer, confText, captionStyle) + fieldPaddingPx
+                        val impactWidth = cell.impactPercent?.let {
+                            measureTextWidthPx(textMeasurer, " (${NumberPolicy.formatPercentage(it)})", captionStyle)
+                        } ?: 0
+                        valueWidth + plusMinusWidth + confWidth + impactWidth + cellPaddingPx
+                    }
+                    tableDimensionState.updateColumnWidth(cell.columnId, with(density) { cellWidthPx.toDp() })
                     Surface(
                         modifier = Modifier
-                            .width(IntrinsicSize.Max)
-                            .widthIn(min = 120.dp.coerceAtLeast(columnWidth))
+                            .width(columnWidth.coerceAtLeast(120.dp))
                             .fillMaxHeight()
                             .onSizeChanged { size ->
                                 tableDimensionState.updateColumnWidth(cell.columnId, with(density) { size.width.toDp() })

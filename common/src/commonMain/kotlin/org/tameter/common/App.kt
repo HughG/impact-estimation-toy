@@ -6,11 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.Checkbox
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -20,7 +16,9 @@ import org.tameter.iet.ui.IetTable
 
 @Composable
 fun App() {
-    val modelBridge = remember {
+    val modelBridge = remember { ModelBridge(ImpactEstimationTable()) }
+
+    LaunchedEffect(Unit) {
         val table = ImpactEstimationTable().apply {
             // 3 Performance Requirements
             requirements.add(PerformanceRequirement("Perf 1", "%", 50.0, 100.0))
@@ -41,7 +39,7 @@ fun App() {
             setEstimation(0, 0, Estimation(75.0, confidenceRange = 5.0))
             // Row 3, Col 0: Res 1, Idea A. Budget=10000. Let's say Idea A costs 2000.
             setEstimation(3, 0, Estimation(2000.0, confidenceRange = 500.0))
-            
+
             // Row 0, Col 1: Perf 1, Idea B. Let's say Idea B gives 100.
             setEstimation(0, 1, Estimation(100.0))
             // Row 3, Col 1: Res 1, Idea B. Let's say Idea B costs 5000.
@@ -52,7 +50,7 @@ fun App() {
             // Row 4, Col 2: Res 2, Idea C. Budget=500. Let's say Idea C costs 100.
             setEstimation(4, 2, Estimation(100.0))
         }
-        ModelBridge(table)
+        modelBridge.updateModel(table)
     }
 
     var inlineTotals by remember { mutableStateOf(false) }
