@@ -286,7 +286,7 @@ private fun HeaderRow(
                         border = BorderStroke(0.5.dp, Color.LightGray),
                         color = MaterialTheme.colors.primary
                     ) {
-                        Box(contentAlignment = Alignment.Center) {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                             EditableField(
                                 value = column.id,
                                 onValueChange = { newId ->
@@ -294,7 +294,7 @@ private fun HeaderRow(
                                         modelBridge.updateDesignIdea(column.id, DesignIdea(newId))
                                     }
                                 },
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                                modifier = Modifier.padding(horizontal = 4.dp),
                                 placeholder = "Idea name",
                                 textColor = MaterialTheme.colors.onPrimary
                             )
@@ -389,6 +389,7 @@ private fun EditableField(
         singleLine = true,
         decorationBox = { innerTextField ->
             Surface(
+                modifier = Modifier.width(IntrinsicSize.Min),
                 color = if (isFocused) {
                     MaterialTheme.colors.primary.copy(alpha = 0.05f)
                 } else if (isHovered) {
@@ -405,15 +406,14 @@ private fun EditableField(
             ) {
                 Box(
                     contentAlignment = Alignment.Center,
-                    modifier = Modifier.fillMaxWidth().padding(2.dp)
+                    modifier = Modifier.padding(2.dp)
                 ) {
                     if (textState.isEmpty() && placeholder.isNotEmpty()) {
                         Text(
                             text = placeholder,
                             style = if (isCaption) MaterialTheme.typography.caption else MaterialTheme.typography.body1,
                             color = Color.LightGray,
-                            textAlign = TextAlign.Center,
-                            modifier = Modifier.fillMaxWidth()
+                            textAlign = TextAlign.Center
                         )
                     }
                     innerTextField()
@@ -520,30 +520,30 @@ private fun DataRow(
                         textAlign = TextAlign.Center
                     )
                 } else {
-                    EditableField(
-                        value = row.id,
-                        onValueChange = { newId ->
-                            if (newId != row.id) {
-                                val currentReq = modelBridge.readModel.value.rows.find { it.id == row.id }
-                                val req = when (row.type) {
-                                    RowType.Performance -> PerformanceRequirement(
-                                        id = newId,
-                                        unit = row.unit,
-                                        current = row.performanceDetails?.current ?: 0.0,
-                                        goal = row.performanceDetails?.goal ?: 0.0
-                                    )
-                                    RowType.Resource -> ResourceRequirement(
-                                        id = newId,
-                                        unit = row.unit,
-                                        budget = row.resourceDetails?.budget ?: 0.0
-                                    )
-                                    else -> null
+                        EditableField(
+                            value = row.id,
+                            onValueChange = { newId ->
+                                if (newId != row.id) {
+                                    val currentReq = modelBridge.readModel.value.rows.find { it.id == row.id }
+                                    val req = when (row.type) {
+                                        RowType.Performance -> PerformanceRequirement(
+                                            id = newId,
+                                            unit = row.unit,
+                                            current = row.performanceDetails?.current ?: 0.0,
+                                            goal = row.performanceDetails?.goal ?: 0.0
+                                        )
+                                        RowType.Resource -> ResourceRequirement(
+                                            id = newId,
+                                            unit = row.unit,
+                                            budget = row.resourceDetails?.budget ?: 0.0
+                                        )
+                                        else -> null
+                                    }
+                                    req?.let { modelBridge.updateRequirement(row.id, it) }
                                 }
-                                req?.let { modelBridge.updateRequirement(row.id, it) }
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                            },
+                            modifier = Modifier.fillMaxWidth()
+                        )
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -564,7 +564,6 @@ private fun DataRow(
                                             ))
                                         }
                                     },
-                                    modifier = Modifier.weight(1f),
                                     isCaption = true
                                 )
                                 Text(" -> ", style = MaterialTheme.typography.caption, color = Color.Gray)
@@ -580,7 +579,6 @@ private fun DataRow(
                                             ))
                                         }
                                     },
-                                    modifier = Modifier.weight(1f),
                                     isCaption = true
                                 )
                             }
@@ -597,7 +595,6 @@ private fun DataRow(
                                             ))
                                         }
                                     },
-                                    modifier = Modifier.weight(1f),
                                     isCaption = true
                                 )
                             }
@@ -622,7 +619,6 @@ private fun DataRow(
                                 }
                                 req?.let { modelBridge.updateRequirement(row.id, it) }
                             },
-                            modifier = Modifier.width(40.dp),
                             isCaption = true,
                             placeholder = "unit"
                         )
@@ -673,7 +669,6 @@ private fun DataRow(
                                             modelBridge.setEstimation(cell.rowId, cell.columnId, Estimation(d, cell.confidenceRange))
                                         }
                                     },
-                                    modifier = Modifier.weight(1f),
                                     placeholder = "val"
                                 )
                                 Text("±", style = MaterialTheme.typography.caption, color = Color.Gray)
@@ -683,7 +678,6 @@ private fun DataRow(
                                         val d = newValue.toDoubleOrNull()
                                         modelBridge.setEstimation(cell.rowId, cell.columnId, Estimation(cell.estimatedValue ?: 0.0, d))
                                     },
-                                    modifier = Modifier.weight(1f),
                                     isCaption = true,
                                     placeholder = "conf"
                                 )
