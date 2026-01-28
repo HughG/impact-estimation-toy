@@ -4,6 +4,13 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -46,13 +53,21 @@ import kotlin.math.roundToInt
 
 private const val ROW_HEADER_KEY = "__row_header__"
 
-private class ColumnWidthState {
-    val widths = mutableStateMapOf<String, Dp>()
+private class TableDimensionState {
+    val columnWidths = mutableStateMapOf<String, Dp>()
+    val rowHeights = mutableStateMapOf<String, Dp>()
 
-    fun updateWidth(key: String, width: Dp) {
-        val current = widths[key] ?: 0.dp
+    fun updateColumnWidth(key: String, width: Dp) {
+        val current = columnWidths[key] ?: 0.dp
         if (width > current) {
-            widths[key] = width
+            columnWidths[key] = width
+        }
+    }
+
+    fun updateRowHeight(key: String, height: Dp) {
+        val current = rowHeights[key] ?: 0.dp
+        if (height > current) {
+            rowHeights[key] = height
         }
     }
 }
@@ -60,14 +75,14 @@ private class ColumnWidthState {
 @Composable
 fun IetTable(modelBridge: ModelBridge, inlineTotals: Boolean = false) {
     val readModel by modelBridge.readModel.collectAsState()
-    val tableWidthState = remember { ColumnWidthState() }
+    val tableDimensionState = remember { TableDimensionState() }
     val density = LocalDensity.current
 
     val horizontalScrollState = rememberScrollState()
 
     Column(modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.padding(16.dp)) {
-            HeaderRow(readModel, horizontalScrollState, modelBridge, tableWidthState)
+            HeaderRow(readModel, horizontalScrollState, modelBridge, tableDimensionState)
         }
 
         Box(modifier = Modifier.weight(1f).padding(horizontal = 16.dp)) {
@@ -84,7 +99,7 @@ fun IetTable(modelBridge: ModelBridge, inlineTotals: Boolean = false) {
                             Box(modifier = Modifier.weight(1f)) {
                                 LazyColumn(state = perfScrollState, modifier = Modifier.fillMaxSize()) {
                                     itemsIndexed(performanceRows, key = { _, row -> row.id }) { index, row ->
-                                        DataRow(row, horizontalScrollState, modelBridge = modelBridge, tableWidthState = tableWidthState)
+                                        DataRow(row, horizontalScrollState, modelBridge = modelBridge, tableDimensionState = tableDimensionState)
                                         Divider()
                                     }
                                 }
@@ -99,7 +114,7 @@ fun IetTable(modelBridge: ModelBridge, inlineTotals: Boolean = false) {
                     // Performance Total (Fixed between groups)
                     val perfTotal = footerRows.find { it.id == "__perf_totals__" }
                     perfTotal?.let {
-                        DataRow(it, horizontalScrollState, isTotal = true, modelBridge = modelBridge, tableWidthState = tableWidthState)
+                        DataRow(it, horizontalScrollState, isTotal = true, modelBridge = modelBridge, tableDimensionState = tableDimensionState)
                         Divider(thickness = 2.dp)
                     }
 
@@ -110,7 +125,7 @@ fun IetTable(modelBridge: ModelBridge, inlineTotals: Boolean = false) {
                             Box(modifier = Modifier.weight(1f)) {
                                 LazyColumn(state = resScrollState, modifier = Modifier.fillMaxSize()) {
                                     itemsIndexed(resourceRows, key = { _, row -> row.id }) { index, row ->
-                                        DataRow(row, horizontalScrollState, modelBridge = modelBridge, tableWidthState = tableWidthState)
+                                        DataRow(row, horizontalScrollState, modelBridge = modelBridge, tableDimensionState = tableDimensionState)
                                         Divider()
                                     }
                                 }
@@ -125,7 +140,7 @@ fun IetTable(modelBridge: ModelBridge, inlineTotals: Boolean = false) {
                     // Resource Total (Fixed after Resource group)
                     val resTotal = footerRows.find { it.id == "__res_totals__" }
                     resTotal?.let {
-                        DataRow(it, horizontalScrollState, isTotal = true, modelBridge = modelBridge, tableWidthState = tableWidthState)
+                        DataRow(it, horizontalScrollState, isTotal = true, modelBridge = modelBridge, tableDimensionState = tableDimensionState)
                         Divider(thickness = 2.dp)
                     }
                 }
@@ -136,11 +151,11 @@ fun IetTable(modelBridge: ModelBridge, inlineTotals: Boolean = false) {
                         Box(modifier = Modifier.weight(1f)) {
                             LazyColumn(state = mainScrollState, modifier = Modifier.fillMaxSize()) {
                                 itemsIndexed(performanceRows, key = { _, row -> row.id }) { index, row ->
-                                    DataRow(row, horizontalScrollState, modelBridge = modelBridge, tableWidthState = tableWidthState)
+                                    DataRow(row, horizontalScrollState, modelBridge = modelBridge, tableDimensionState = tableDimensionState)
                                     Divider()
                                 }
                                 itemsIndexed(resourceRows, key = { _, row -> row.id }) { index, row ->
-                                    DataRow(row, horizontalScrollState, modelBridge = modelBridge, tableWidthState = tableWidthState)
+                                    DataRow(row, horizontalScrollState, modelBridge = modelBridge, tableDimensionState = tableDimensionState)
                                     Divider()
                                 }
                             }
@@ -166,12 +181,12 @@ fun IetTable(modelBridge: ModelBridge, inlineTotals: Boolean = false) {
 
                 pinnedToShow.forEach { row ->
                     Divider(thickness = 2.dp)
-                    DataRow(row, horizontalScrollState, isTotal = true, isPinned = true, modelBridge = modelBridge, tableWidthState = tableWidthState)
+                    DataRow(row, horizontalScrollState, isTotal = true, isPinned = true, modelBridge = modelBridge, tableDimensionState = tableDimensionState)
                 }
                 
                 Row {
                     // Fixed corner spacer
-                    val rowHeaderWidth = tableWidthState.widths[ROW_HEADER_KEY] ?: 200.dp
+                    val rowHeaderWidth = tableDimensionState.columnWidths[ROW_HEADER_KEY] ?: 200.dp
                     Spacer(modifier = Modifier.width(rowHeaderWidth.coerceAtLeast(200.dp)))
                     
                     HorizontalScrollbar(
@@ -192,19 +207,22 @@ private fun HeaderRow(
     readModel: TableReadModel,
     scrollState: ScrollState,
     modelBridge: ModelBridge,
-    tableWidthState: ColumnWidthState
+    tableDimensionState: TableDimensionState
 ) {
     val density = LocalDensity.current
     Row(modifier = Modifier.fillMaxWidth()) {
         // Fixed corner
-        val rowHeaderWidth = tableWidthState.widths[ROW_HEADER_KEY] ?: 200.dp
+        val rowHeaderWidth = tableDimensionState.columnWidths[ROW_HEADER_KEY] ?: 200.dp
         Surface(
             modifier = Modifier
                 .width(IntrinsicSize.Max)
                 .widthIn(min = 200.dp.coerceAtLeast(rowHeaderWidth))
                 .height(40.dp)
                 .onSizeChanged { size ->
-                    tableWidthState.updateWidth(ROW_HEADER_KEY, with(density) { size.width.toDp() })
+                    tableDimensionState.updateColumnWidth(ROW_HEADER_KEY, with(density) { size.width.toDp() })
+                }
+                .semantics {
+                    contentDescription = "Requirement Headers Column"
                 },
             color = MaterialTheme.colors.primary
         ) {
@@ -219,7 +237,7 @@ private fun HeaderRow(
                 readModel.columns.forEachIndexed { index, column ->
                     var offsetX by remember(column.id) { mutableStateOf(0f) }
                     var isDragging by remember(column.id) { mutableStateOf(false) }
-                    val columnWidth = tableWidthState.widths[column.id] ?: 120.dp
+                    val columnWidth = tableDimensionState.columnWidths[column.id] ?: 120.dp
 
                     Surface(
                         modifier = Modifier
@@ -259,8 +277,11 @@ private fun HeaderRow(
                                     }
                                 )
                             }
+                            .semantics {
+                                contentDescription = "Design Idea: ${column.id}"
+                            }
                             .onSizeChanged { size ->
-                                tableWidthState.updateWidth(column.id, with(density) { size.width.toDp() })
+                                tableDimensionState.updateColumnWidth(column.id, with(density) { size.width.toDp() })
                             },
                         border = BorderStroke(0.5.dp, Color.LightGray),
                         color = MaterialTheme.colors.primary
@@ -298,6 +319,9 @@ private fun EditableField(
 ) {
     val focusManager = LocalFocusManager.current
     var textState by remember(value) { mutableStateOf(value) }
+    val interactionSource = remember { MutableInteractionSource() }
+    val isFocused by interactionSource.collectIsFocusedAsState()
+    val isHovered by interactionSource.collectIsHoveredAsState()
 
     val onCommit = {
         if (textState != value) {
@@ -308,7 +332,12 @@ private fun EditableField(
     BasicTextField(
         value = textState,
         onValueChange = { textState = it },
+        interactionSource = interactionSource,
         modifier = modifier
+            .hoverable(interactionSource)
+            .semantics {
+                contentDescription = if (placeholder.isNotEmpty()) placeholder else "Editable field"
+            }
             .onKeyEvent {
                 if (it.type != KeyEventType.KeyDown) return@onKeyEvent false
                 
@@ -324,6 +353,10 @@ private fun EditableField(
                     onCommit()
                     focusManager.moveFocus(FocusDirection.Down)
                     true
+                } else if (it.key == Key.DirectionLeft && !isCaption) {
+                    // Only move focus on arrows if not in the middle of text? 
+                    // For now, let's stick to simple Tab/Enter for horizontal/vertical.
+                    false
                 } else if (it.key == Key.Tab) {
                     onCommit()
                     if (it.isShiftPressed) {
@@ -342,26 +375,49 @@ private fun EditableField(
                 }
             },
         textStyle = if (isCaption) {
-            MaterialTheme.typography.caption.copy(color = if (textColor != Color.Unspecified) textColor else Color.Gray, textAlign = TextAlign.Center)
+            MaterialTheme.typography.caption.copy(
+                color = if (textColor != Color.Unspecified) textColor else if (isFocused) MaterialTheme.colors.primary else Color.Gray,
+                textAlign = TextAlign.Center
+            )
         } else {
-            MaterialTheme.typography.body1.copy(color = textColor, textAlign = TextAlign.Center, fontWeight = if (textColor != Color.Unspecified) FontWeight.Bold else FontWeight.Normal)
+            MaterialTheme.typography.body1.copy(
+                color = if (textColor != Color.Unspecified) textColor else if (isFocused) MaterialTheme.colors.primary else Color.Unspecified,
+                textAlign = TextAlign.Center,
+                fontWeight = if (textColor != Color.Unspecified || isFocused) FontWeight.Bold else FontWeight.Normal
+            )
         },
         singleLine = true,
         decorationBox = { innerTextField ->
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.fillMaxWidth()
+            Surface(
+                color = if (isFocused) {
+                    MaterialTheme.colors.primary.copy(alpha = 0.05f)
+                } else if (isHovered) {
+                    Color.LightGray.copy(alpha = 0.1f)
+                } else {
+                    Color.Transparent
+                },
+                shape = RoundedCornerShape(4.dp),
+                border = if (isFocused) {
+                    BorderStroke(1.dp, MaterialTheme.colors.primary.copy(alpha = 0.5f))
+                } else if (isHovered) {
+                    BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.5f))
+                } else null
             ) {
-                if (textState.isEmpty() && placeholder.isNotEmpty()) {
-                    Text(
-                        text = placeholder,
-                        style = if (isCaption) MaterialTheme.typography.caption else MaterialTheme.typography.body1,
-                        color = Color.LightGray,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.fillMaxWidth().padding(2.dp)
+                ) {
+                    if (textState.isEmpty() && placeholder.isNotEmpty()) {
+                        Text(
+                            text = placeholder,
+                            style = if (isCaption) MaterialTheme.typography.caption else MaterialTheme.typography.body1,
+                            color = Color.LightGray,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                    innerTextField()
                 }
-                innerTextField()
             }
         }
     )
@@ -374,20 +430,29 @@ private fun DataRow(
     isTotal: Boolean = false,
     isPinned: Boolean = false,
     modelBridge: ModelBridge,
-    tableWidthState: ColumnWidthState
+    tableDimensionState: TableDimensionState
 ) {
     val density = LocalDensity.current
-    Row(modifier = Modifier.fillMaxWidth()) {
+    val rowHeight = tableDimensionState.rowHeights[row.id] ?: 60.dp
+
+    Row(modifier = Modifier
+        .fillMaxWidth()
+        .height(IntrinsicSize.Max)
+        .heightIn(min = rowHeight)
+        .onSizeChanged { size ->
+            tableDimensionState.updateRowHeight(row.id, with(density) { size.height.toDp() })
+        }
+    ) {
         // Row Header (Requirement Name/ID)
         var offsetY by remember(row.id) { mutableStateOf(0f) }
         var isDragging by remember(row.id) { mutableStateOf(false) }
 
-        val rowHeaderWidth = tableWidthState.widths[ROW_HEADER_KEY] ?: 200.dp
+        val rowHeaderWidth = tableDimensionState.columnWidths[ROW_HEADER_KEY] ?: 200.dp
         Surface(
             modifier = Modifier
                 .width(IntrinsicSize.Max)
                 .widthIn(min = 200.dp.coerceAtLeast(rowHeaderWidth))
-                .height(60.dp)
+                .fillMaxHeight()
                 .zIndex(if (isDragging) 1f else 0f)
                 .graphicsLayer {
                     translationY = offsetY
@@ -407,7 +472,7 @@ private fun DataRow(
                                 },
                                 onDragEnd = {
                                     isDragging = false
-                                    val threshold = 60f // row height
+                                    val threshold = with(density) { rowHeight.toPx() }
                                     val numMoved = (offsetY / threshold).roundToInt()
                                     
                                     if (numMoved != 0) {
@@ -433,7 +498,10 @@ private fun DataRow(
                     } else Modifier
                 )
                 .onSizeChanged { size ->
-                    tableWidthState.updateWidth(ROW_HEADER_KEY, with(density) { size.width.toDp() })
+                    tableDimensionState.updateColumnWidth(ROW_HEADER_KEY, with(density) { size.width.toDp() })
+                }
+                .semantics {
+                    contentDescription = "Requirement: ${row.id}"
                 },
             color = if (isTotal) {
                 if (isPinned) MaterialTheme.colors.secondaryVariant else MaterialTheme.colors.secondary.copy(alpha = 0.1f)
@@ -567,14 +635,17 @@ private fun DataRow(
         Box(modifier = Modifier.weight(1f).horizontalScroll(scrollState)) {
             Row {
                 row.cells.forEach { cell ->
-                    val columnWidth = tableWidthState.widths[cell.columnId] ?: 120.dp
+                    val columnWidth = tableDimensionState.columnWidths[cell.columnId] ?: 120.dp
                     Surface(
                         modifier = Modifier
                             .width(IntrinsicSize.Max)
                             .widthIn(min = 120.dp.coerceAtLeast(columnWidth))
-                            .height(60.dp)
+                            .fillMaxHeight()
                             .onSizeChanged { size ->
-                                tableWidthState.updateWidth(cell.columnId, with(density) { size.width.toDp() })
+                                tableDimensionState.updateColumnWidth(cell.columnId, with(density) { size.width.toDp() })
+                            }
+                            .semantics {
+                                contentDescription = "Estimation for ${row.id} and ${cell.columnId}"
                             },
                         border = BorderStroke(0.5.dp, Color.LightGray),
                         color = if (isTotal && !isPinned) MaterialTheme.colors.secondary.copy(alpha = 0.05f) else Color.Transparent

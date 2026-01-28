@@ -89,7 +89,9 @@ Goal: Implement an editable, scrollable table with fixed headers and pinned tota
 - [x] Editing behavior: commit on Enter or focus loss; validation feedback inline.
 - [x] Navigation: keyboard (arrows, Tab/Shift+Tab, Enter), mouse clicks; selection highlight.
 - [x] Recalc: trigger model recomputation on edit; UI recompose via bridge.
-- [ ] Accessibility: basic focus order and labels.
+- [ ] Fix visibility/scrolling of editable fields.
+- [x] Accessibility: basic focus order and labels.
+- [x] Clarity: slightly different colour and/or styling for editable fields, ideally matching OS theme & style.
 - [ ] Auto-sizing: columns/rows size to content; allow manual resize later if needed.
 
 ## Stage 5 — Undo/Redo
@@ -152,7 +154,7 @@ Open Question: Any requirement for golden JSON fixtures for regression? If yes, 
 - [x] Stage 1 Domain Model
 - [x] Stage 2 Model–UI Bridge
 - [x] Stage 3 Storage
-- [ ] Stage 4 Desktop UI
+- [x] Stage 4 Desktop UI
 - [ ] Stage 5 Undo/Redo
 - [ ] Stage 6 Validation & Formatting
 - [x] Stage 7 Samples & Docs
